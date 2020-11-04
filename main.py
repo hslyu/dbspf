@@ -2,9 +2,11 @@
 
 class configs:
     # velocity of vehicle
-    asdf
-    asdf
-    asdf
-    asdf
-    asdf
+    velocity = 10
+    service_time = 2
 
+def __main__():
+
+
+if __name__=="__main__":
+    __main__()
