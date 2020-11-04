@@ -8,7 +8,10 @@ class node:
         self.end_time = end_time
 
 class vehicle:
-    def __init__(self, pos_x=0, pos_y=0, velocity, service_time):
-
-
-
+    def __init__(self, pos_x=0, pos_y=0, pos_h=0, velocity, service_time):
+        self.pos_x=pos_x
+        self.pos_y=pos_y
+        self.pos_h=pos_z
+        self.velocity=velocity
+        self.service_time=service_time
+    
