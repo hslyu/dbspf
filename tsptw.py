@@ -113,7 +113,10 @@ class TSPGraph:
         for i in range(self.num_node):
             # If i is in S,
             if S & 1<<i:
-                self.cost_cache[S][j][t] = min(self.cost_cache[S]
+                self.cost_cache[S][j][t] = min(self.cost_cache[S][j][t], 
+                                            self.cost_cache[S-(1<<i)][i][t_] + cost(i, j))
+
+        return self.cost_cache[S][j][t]
 
 
     def cost(self, i, j):
