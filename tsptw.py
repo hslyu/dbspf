@@ -1,9 +1,11 @@
 #! /usr/bin/env python3
+
 # Travelling Salesman Problem with Time Window (revised for UAV comm.)
 # Author : Hyeonsu Lyu, POSTECH, Korea
 # Contact : hslyu4@postech.ac.kr
 import random
 import numpy as np
+import math
 
 #### To do list
 # (OK) Discritize time slot
@@ -13,8 +15,8 @@ import numpy as np
 # () Initial vehicle location setting
 ####
 
-VEHICLE_VELOCITY = 10 # m/s
-VEHICLE_SERVICE_TIME = 2 # s
+VEHICLE_VELOCITY = 10. # m/s
+SERVICE_TIME = 2 # s
 MAP_SIZE = [0, 200]
 TIME_WINDOW_SIZE = [10, 30]
 # To prevent node.time_end exceeds MAX_TIME_UNIT, subtract max time window size.
@@ -71,20 +73,18 @@ class TSPGraph:
 
     # The earliest arrival time from node i to node j.
     def EAT(self, i, j):
-        float_EAT = self.node_list[i].time_start + VEHICLE_SERVICE_TIME + self.distance[i][j]/VEHICLE_VELOCITY
-        # round up function
-        return round(float_EAT + .4999999)
+        return int(math.ceil(self.node_list[i].time_start + SERVICE_TIME + self.distance[i][j]/VEHICLE_VELOCITY))
 
     # The latest feasible departure time from i to j.
     def LDT(self, i, j):
-        float_LDT = self.node_list[j].time_end - VEHICLE_SERVICE_TIME - self.distance[j][i]/VEHICLE_VELOCITY
+        float_LDT = self.node_list[j].time_end - SERVICE_TIME - self.distance[j][i]/VEHICLE_VELOCITY
         return int(float_LDT)
 
     # The first time value that the vehicle travles all nodes of set S and ends at i-th node.
     def first(self, S, i):
-        for j in range(self.node_list[i].tw_size):
-            if self.cost_cache[S][i][j] != INF:
-                return j
+        for t in range(self.node_list[i].tw_size):
+            if self.cost_cache[S][i][t] != INF:
+                return t
 
     # Set of all nodes which must necessarily be visited before j
     def before(self, j):
@@ -102,6 +102,10 @@ class TSPGraph:
     # j is an integer node id.
     # t is an integer time slot
     def min_path_cost(self, S, j, t):
+        # Check feasibility of t
+        if t < self.node_list[j].time_start or t > self.node_list[j].time_end:
+            return INF
+            
         # Initial state of the reccurence
         if S == (1<<0) + (1<<j):
             return cost(0,j)
@@ -111,9 +115,13 @@ class TSPGraph:
 
         self.cost_cache[S][j][t] = INF
         for i in range(self.num_node):
-            # If i is in S,
+            # If i is element of S,
             if S & 1<<i:
-                self.cost_cache[S][j][t] = min(self.cost_cache[S][j][t], 
+                # See note "max_feasible_time"
+                max_feasible_time = min(self.node_list[i].tw_size,
+                    self.node_list[j].time_start + t - self.node_list[i].time_start - SERVICE_TIME - math.ceil(self.distance[i][j]/VEHICLE_VELOCITY))
+                for t_ in range(max_feasible_time):
+                    self.cost_cache[S][j][t] = min(self.cost_cache[S][j][t], 
                                             self.cost_cache[S-(1<<i)][i][t_] + cost(i, j))
 
         return self.cost_cache[S][j][t]
@@ -134,5 +142,5 @@ class TSPGraph:
 #        print("cost list shape:::::     {}".format(len(self.cost_cache)))
 
 if __name__=="__main__":
-    a=TSPGraph(5)
+    a=TSPGraph(20)
     a.__print_test__()

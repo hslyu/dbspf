@@ -25,7 +25,7 @@ def shortest_path(cur, visited):
             # If the current path is longer than the path via _next, update the path length 
             cache[cur][visited-1] =  min(cache[cur][visited-1], dist[cur][_next]+shortest_path(_next, visited+(1<<_next)))
             # If the cache is updated, _next is the new next node.
-            if prev! = cache[cur][visited-1]:
+            if prev != cache[cur][visited-1]:
                 next_node[cur][visited-1] = _next
 
     return cache[cur][visited-1]
@@ -45,7 +45,7 @@ def find_route(start, next_node):
     return route
 
 if __name__ == "__main__":
-    n = 5
+    n = 3
     dist = [
         [0, 2, 5, 3, 7],
         [2, 0, 10, 6, 6],
@@ -67,3 +67,5 @@ if __name__ == "__main__":
 
     print(shortest_path(start, 1<<start))
     print(find_route(start, next_node))
+    for j in range(n):
+        print(cache[j])
