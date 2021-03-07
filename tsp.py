@@ -1,24 +1,32 @@
 import math
 
 def shortest_path(cur, visited):
-    # base case
+    # For the array indexing, visited is subtracted by 1.
+    # ex) cache[cur][1<<n] ==> overflow!!! last index representing visiting all nodes is 1<<n-1
+    # If we visit all node
     if visited == (1<<n)-1:
-        ##
+        # next node will be the start node
         next_node[cur][visited-1] = start
         return dist[cur][start]
 
+    # If the state is already recorded, use it.
     if cache[cur][visited-1] != None:
         return cache[cur][visited-1]
 
+    # If current state is not recorded, calculate it.
+    # Initialize
     cache[cur][visited-1] = INF
-    best=-1
+    # Search next node
     for _next in range(n):
+        # If _next is not visited node,
         if not (visited & (1<<_next)):
-            prev=cache[cur][visited-1]
-            cache[cur][visited-1] = \
-            min(cache[cur][visited-1], dist[cur][_next]+shortest_path(_next, visited+(1<<_next)))
-            if prev!=cache[cur][visited-1]:
-                next_node[cur][visited-1]=_next
+            # For the shortest path check
+            prev = cache[cur][visited-1]
+            # If the current path is longer than the path via _next, update the path length 
+            cache[cur][visited-1] =  min(cache[cur][visited-1], dist[cur][_next]+shortest_path(_next, visited+(1<<_next)))
+            # If the cache is updated, _next is the new next node.
+            if prev! = cache[cur][visited-1]:
+                next_node[cur][visited-1] = _next
 
     return cache[cur][visited-1]
 
