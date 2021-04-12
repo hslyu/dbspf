@@ -15,13 +15,14 @@ import math
 # () Initial vehicle location setting
 ####
 
-VEHICLE_VELOCITY = 10. # m/s
-SERVICE_TIME = 2 # s
-MAP_SIZE = [0, 200]
-TIME_WINDOW_SIZE = [10, 30]
+NUM_NODE = 4
+VEHICLE_VELOCITY = 100. # m/s
+SERVICE_TIME = 0 # s
+MAP_SIZE = [0, 30]
+TIME_WINDOW_SIZE = [3, 3]
 # To prevent node.time_end exceeds MAX_TIME_UNIT, subtract max time window size.
-MAX_TIME_UNIT = 300 - TIME_WINDOW_SIZE[1]
-INF = 99999999
+MAX_TIME_UNIT = 10 - TIME_WINDOW_SIZE[1]
+INF = 999999
 
 class TSPNode:
     def __init__(self, node_id, loc_x, loc_y, time_start, time_end):
@@ -60,15 +61,12 @@ class TSPGraph:
         self.get_distance()
 
         # Space to save the dynamic programming result
-        # cost_cache.shape == (2^num_node, num_node, node.tw_size)
-        self.cost_cache = [[[None for _ in range(self.node_list[i].tw_size)]
-                                  for i in range(self.num_node)]
-                                  for _ in range(1<<self.num_node)]
+        self.cost_cache = {}
 
     def get_distance(self):
         for i in range(self.num_node):
             for j in range(i, self.num_node):
-                    self.distance[i, j] = np.linalg.norm(self.node_list[i].location - self.node_list[j].location)
+                    self.distance[i, j] = int(math.ceil(np.linalg.norm(self.node_list[i].location - self.node_list[j].location)))
                     self.distance[j, i] = self.distance[i, j]
 
     # The earliest arrival time from node i to node j.
@@ -83,8 +81,9 @@ class TSPGraph:
     # The first time value that the vehicle travles all nodes of set S and ends at i-th node.
     def first(self, S, i):
         for t in range(self.node_list[i].tw_size):
-            if self.cost_cache[S][i][t] != INF:
+            if (S,j,t) in self.cost_cache and self.cost_cache[(S,j,t)] != INF:
                 return t
+        return -1
 
     # Set of all nodes which must necessarily be visited before j
     def before(self, j):
@@ -100,47 +99,80 @@ class TSPGraph:
     # and serves node j at time t or later.
     # S = bit masking of node set. ex)if num_node=5, S = {0,3} = 01001 
     # j is an integer node id.
-    # t is an integer time slot
+    # t is an integer ime slot
     def min_path_cost(self, S, j, t):
         # Check feasibility of t
-        if t < self.node_list[j].time_start or t > self.node_list[j].time_end:
+        if t > self.node_list[j].time_end:
             return INF
             
         # Initial state of the reccurence
         if S == (1<<0) + (1<<j):
-            return cost(0,j)
+            self.cost_cache[(S,j,t)] = self.cost(0,j)
+            return self.cost(0,j)
         
-        if self.cost_cache[S][j][t] != None:
-            return cost_cache[S][j][t]
+        if (S,j,t) in self.cost_cache:
+            return self.cost_cache[(S,j,t)]
 
-        self.cost_cache[S][j][t] = INF
-        for i in range(self.num_node):
+        self.cost_cache[(S,j,t)] = INF
+        for i in range(1,self.num_node):
             # If i is element of S,
-            if S & 1<<i:
+            if S & 1<<i and i!=j:
+#                print(S,1<<j,S-(1<<j),1<<i,(1<<0)+(1<<i))
                 # See note "max_feasible_time"
                 max_feasible_time = min(self.node_list[i].tw_size,
-                    self.node_list[j].time_start + t - self.node_list[i].time_start - SERVICE_TIME - math.ceil(self.distance[i][j]/VEHICLE_VELOCITY))
-                for t_ in range(max_feasible_time):
-                    self.cost_cache[S][j][t] = min(self.cost_cache[S][j][t], 
-                                            self.cost_cache[S-(1<<i)][i][t_] + cost(i, j))
+                    self.node_list[j].time_start + t - self.node_list[i].time_start - SERVICE_TIME - int(math.ceil(self.distance[i][j]/VEHICLE_VELOCITY)))
+#                print(self.node_list[i].time_start, max_feasible_time)
+                for t_ in range(self.node_list[i].time_start, max_feasible_time):
+                    self.cost_cache[(S,j,t)] = min(self.cost_cache[(S,j,t)], 
+                                            self.min_path_cost(S-(1<<j), i, t_)+ self.cost(i, j))
 
-        return self.cost_cache[S][j][t]
+        return self.cost_cache[(S,j,t)]
 
 
     def cost(self, i, j):
-        return self.distance(i, j)
-        
+        return self.distance[i][j]
+
+    def path_finding(self, S, j, t):
+        path = []
+        path.insert(0, j)
+
+        if S == (1<<0) + (1<<j) :
+            return 0
+
+        break_flag = False
+        for i in range(1,self.num_node):
+            for t_ in range(self.node_list[i].time_start,self.node_list[i].time_end):
+                if (S-(1<<j), i, t_) in self.cost_cache and self.cost_cache[(S,j,t)] == self.cost_cache[(S-(1<<j), i, t_)] + self.cost(i,j):
+                    path.insert(0, path_finding(S-(1<<j), i, t_))
+                    break_flag = True
+                    break;
+            if break_flag:
+                break;
+
+        return path
+
     def __print_test__(self):
         print(self.distance)
-        print("Node example 1  :::    {}".format(self.node_list[1]))
-        print("Node example 2  :::    {}".format(self.node_list[2]))
-        print("Distance 1,2    :::    {}".format(self.distance[1,2]))
-        print("EAT(1,2)        :::    {}".format(self.EAT(1,2)))
-        print("LDT(1,2)        :::    {}".format(self.LDT(1,2)))
-        print("before(1)       :::    {}".format(self.before(1)))
-        print("cost            :::    {}".format((self.cost_cache[1<<self.num_node-1][1][1])))
+#        print("Node example 1  :::    {}".format(self.node_list[1]))
+#        print("Node example 2  :::    {}".format(self.node_list[2]))
+#        print("Distance 1,2    :::    {}".format(self.distance[1,2]))
+#        print("EAT(1,2)        :::    {}".format(self.EAT(1,2)))
+#        print("LDT(1,2)        :::    {}".format(self.LDT(1,2)))
+#        print("before(1)       :::    {}".format(self.before(1)))
+#        print("cost            :::    {}".format((self.cost_cache[1<<self.num_node-1][1][1])))
 #        print("cost list shape:::::     {}".format(len(self.cost_cache)))
-
+#
 if __name__=="__main__":
-    a=TSPGraph(20)
+    a=TSPGraph(NUM_NODE)
     a.__print_test__()
+    print(((1<<NUM_NODE)-1,NUM_NODE-1,10))
+    for i in range(NUM_NODE):
+        print a.node_list[i].time_start, a.node_list[i].time_end
+    for i in range(10):
+        for j in range(1,NUM_NODE):
+            a.min_path_cost((1<<NUM_NODE)-1,j,i+1)
+    for j in range(1,NUM_NODE):
+        for i in range(a.node_list[j].time_start, a.node_list[j].time_end):
+            print(a.cost_cache[((1<<NUM_NODE)-1,j,i+1)])
+    for key in a.cost_cache.keys():
+        print key, a.cost_cache[key]
