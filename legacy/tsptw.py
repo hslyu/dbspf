@@ -16,12 +16,13 @@ import math
 ####
 
 NUM_NODE = 4
-VEHICLE_VELOCITY = 100. # m/s
+VEHICLE_VELOCITY = 10. # m/s
 SERVICE_TIME = 0 # s
 MAP_SIZE = [0, 30]
-TIME_WINDOW_SIZE = [3, 3]
-# To prevent node.time_end exceeds MAX_TIME_UNIT, subtract max time window size.
-MAX_TIME_UNIT = 10 - TIME_WINDOW_SIZE[1]
+TIME_WINDOW_SIZE = [10, 15]
+# To prevent node.time_end exceeds MAX_START_TIME, subtract max time window size.
+MAX_TIME = 500
+MAX_START_TIME = MAX_TIME - TIME_WINDOW_SIZE[1]
 INF = 999999
 
 class TSPNode:
@@ -48,13 +49,17 @@ class TSPGraph:
         self.node_list = []
         for i in range(num_node):
             # Service end time should be within the 
-            time_start = random.randint(0, MAX_TIME_UNIT)
+            time_start = random.randint(0, MAX_START_TIME)
             node = TSPNode(i,
                     random.randint(x_range[0], x_range[1]),
                     random.randint(y_range[0], y_range[1]),
                     time_start, 
                     time_start + random.randint(tw_size[0], tw_size[1]))
             self.node_list.append(node)
+
+###check
+        self.node_list[0].time_start = 0
+        self.node_list[0].time_end   = MAX_TIME
         
         # Generate 2D array of distance between i-th and j-th nodes.
         self.distance = np.zeros([self.num_node, self.num_node])
@@ -117,14 +122,13 @@ class TSPGraph:
         for i in range(1,self.num_node):
             # If i is element of S,
             if S & 1<<i and i!=j:
-#                print(S,1<<j,S-(1<<j),1<<i,(1<<0)+(1<<i))
                 # See note "max_feasible_time"
                 max_feasible_time = min(self.node_list[i].tw_size,
                     self.node_list[j].time_start + t - self.node_list[i].time_start - SERVICE_TIME - int(math.ceil(self.distance[i][j]/VEHICLE_VELOCITY)))
 #                print(self.node_list[i].time_start, max_feasible_time)
                 for t_ in range(self.node_list[i].time_start, max_feasible_time):
                     self.cost_cache[(S,j,t)] = min(self.cost_cache[(S,j,t)], 
-                                            self.min_path_cost(S-(1<<j), i, t_)+ self.cost(i, j))
+                                            self.min_path_cost(S-(1<<j), i, t_) + self.cost(i, j))
 
         return self.cost_cache[(S,j,t)]
 
@@ -138,7 +142,6 @@ class TSPGraph:
 
         if S == (1<<0) + (1<<j) :
             return 0
-
         break_flag = False
         for i in range(1,self.num_node):
             for t_ in range(self.node_list[i].time_start,self.node_list[i].time_end):
@@ -161,18 +164,25 @@ class TSPGraph:
 #        print("before(1)       :::    {}".format(self.before(1)))
 #        print("cost            :::    {}".format((self.cost_cache[1<<self.num_node-1][1][1])))
 #        print("cost list shape:::::     {}".format(len(self.cost_cache)))
-#
+
+
 if __name__=="__main__":
+    # Generate random TSP graph
     a=TSPGraph(NUM_NODE)
+
+    # Print distance array
     a.__print_test__()
+
+    # Print Basic Information
     print(((1<<NUM_NODE)-1,NUM_NODE-1,10))
     for i in range(NUM_NODE):
         print a.node_list[i].time_start, a.node_list[i].time_end
-    for i in range(10):
-        for j in range(1,NUM_NODE):
-            a.min_path_cost((1<<NUM_NODE)-1,j,i+1)
-    for j in range(1,NUM_NODE):
-        for i in range(a.node_list[j].time_start, a.node_list[j].time_end):
-            print(a.cost_cache[((1<<NUM_NODE)-1,j,i+1)])
+
+    # Search all node
+    for node_idx in range(1,NUM_NODE):
+        for time_idx in range(a.node_list[node_idx].time_start, a.node_list[node_idx].time_end):
+            a.min_path_cost((1<<NUM_NODE)-1, node_idx, time_idx)
+            print(a.cost_cache[((1<<NUM_NODE)-1, node_idx, time_idx)])
+
     for key in a.cost_cache.keys():
         print key, a.cost_cache[key]
