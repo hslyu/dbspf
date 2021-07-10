@@ -35,8 +35,8 @@ SURROUNDING_A = 9.64 # Envrionmental parameter for probablistic LOS link
 SURROUNDING_B = 0.04 # Envrionmental parameter for probablistic LOS link
 EPSILON = 1e-3
 # Optimization hyperparameter
-GAMMA = 0.04
-STEP_SIZE = 1e-3
+GAMMA = 0.12
+STEP_SIZE = 4e-3
 THRESHOLD = 1e-8
 
 class User:
@@ -347,18 +347,18 @@ class TrajectoryTree:
             return value
 
         # Initialize arguments of the dual function
-        lambda_1 = 1.1
-        lambda_2 = 1
-        mu_list=[0.0]*len(user_set)
+        lambda_1 = 0.3
+        lambda_2 = .8
+        mu_list=[0.2]*len(user_set)
         weight_list = [0]*(2+len(mu_list))
 
 #        print("First input:", [lambda_1, lambda_2]+mu_list )
 #        print("First input:", [lambda_1, lambda_2]+mu_list )
 #        print("First input:", [lambda_1, lambda_2]+mu_list )
 
-        import time
-        start = time.time()
-        count=0
+#        import time
+#        start = time.time()
+#        count=0
         while True:
 #            count+=1
             # Save before update
@@ -392,11 +392,13 @@ class TrajectoryTree:
 #            if count > 50000:
 #                break;
 
-#        print("Final values:", [lambda_1, lambda_2]+mu_list )
-#        print("Count:", count)
 #        print("Time:", time.time()-start)
 
         resource_list = [BANDWIDTH/(lambda_1+user.psd*lambda_2-mu_list[idx])-user.total_throughput/user.se for idx, user in enumerate(user_set)]
+#        print("Final values:", [lambda_1, lambda_2]+mu_list )
+#        print("Resource list:", resource_list)
+#        print("Sum resource", sum(resource_list))
+#        print("Count:", count)
         resource_list = [resource+(BANDWIDTH-sum(resource_list))/len(resource_list) for resource in resource_list]
 #        print(resource_list)
         for user, resource in zip(user_set, resource_list):
@@ -480,11 +482,15 @@ if __name__ =="__main__":
     import time
     position = np.array([30,50,70])
     #    random.seed(a=50)
-    a = TrajectoryTree(position)
-    start = time.time()
-    # TEST CODE FOR DFS
-    a.get_reward(position)
-    print(time.time()-start)
+    avg=0
+    testnumber=100
+    for i in range(testnumber):
+        a = TrajectoryTree(position)
+        start = time.time()
+        # TEST CODE FOR DFS
+        a.get_reward(position)
+        avg+=(time.time()-start)/testnumber
+    print(avg)
 
 #    avg = 0{{{
 #    for i in range(2000):
