@@ -26,11 +26,11 @@ THRESHOLD = 1e-7
 INF = 1e8-1#}}}
 
 class User:#{{{
-    def __init__(self, uid=0, loc_x=0, loc_y=0,\
+    def __init__(self, uid=0, position = [0, 0],\
             time_start=0, tw_size=0, datarate=0,\
             initial_data=0, max_data=0):
         self.id = uid
-        self.position = [loc_x, loc_y]
+        self.position = position
         self.time_start = time_start
         self.time_end = self.time_start + tw_size
         # Requiring datarate b/s
@@ -53,7 +53,7 @@ class User:#{{{
     def __repr__(self):
         return "{}".format(self.id)#}}}
 
-class TrajectoryNode:
+class TrajectoryNode:#{{{
     def __init__(self, position, parent=None):
         # value
         self.position = position
@@ -392,10 +392,9 @@ class TrajectoryNode:
                 print([user.ra for user in self.user_list])
             # user.ra = unit of 20MHz = 20 * unit of MHz
             value += math.log(1+(user.ra*20)*se/user.total_data,2)#}}}
-        return value
+        return value#}}}
 
-#class UAV
-class TrajectoryTree:
+class TrajectoryTree:#{{{
     def __init__(self, root, vehicle_velocity,\
                 time_step, grid_size,\
                 map_width, min_altitude, max_altitude,\
@@ -528,7 +527,7 @@ class TrajectoryTree:
             print("1 Unit recursive tree elapsed time:", self.root.elapsed_time)
             self.root.get_info()
         return path
-        #}}}
+        #}}}#}}}
 
 #{{{
 """
