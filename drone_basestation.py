@@ -8,7 +8,7 @@ import random
 import math
 import time
 
-# Constant for wirless communication
+# Constant for wirless communication{{{
 FREQUENCY = 2.0*1e9 # Hz
 LIGHTSPEED = 3*1e8 # m/s
 BANDWIDTH = 1. # 20 MHz per unit
@@ -23,7 +23,7 @@ EPSILON = 1e-9
 STEP_SIZE = 1e-1
 THRESHOLD = 1e-7
 # etc
-INF = 1e8-1
+INF = 1e8-1#}}}
 
 class User:#{{{
     def __init__(self, uid=0, loc_x=0, loc_y=0,\
@@ -57,6 +57,7 @@ class TrajectoryNode:
     def __init__(self, position, parent=None):
         # value
         self.position = position
+        self.elapsed_time = 0.
         # link
         self.leafs = []
 
@@ -71,10 +72,10 @@ class TrajectoryNode:
             self.copy_user(parent.user_list)
             self.current_time = parent.current_time+1
 
+#            start = time.time()
             # Calculate reward
             self.reward = self.get_reward()
 #            self.reward = self.get_random_reward()
-#            start = time.time()
 #            print("Reward is calculated from node and elapsed time:", self.position, time.time()-start)
 
     def copy_user(self, user_list):
@@ -522,12 +523,15 @@ class TrajectoryTree:
             start=time.time()
             self.root = self.DFS(self.root)[0][-2]
             self.recursive_find_leaf([self.root], 1) 
+            self.root.elapsed_time = time.time()-start
             print("current time:", i)
-            print("1 Unit recursive tree elapsed time:",time.time()-start)#}}}
+            print("1 Unit recursive tree elapsed time:", self.root.elapsed_time)
             self.root.get_info()
-
         return path
+        #}}}
 
+#{{{
+"""
 if __name__ =="__main__":
     position = np.array([random.randint(0, MAP_WIDTH)//10*10,
                          random.randint(0, MAP_WIDTH)//10*10,
@@ -557,3 +561,4 @@ if __name__ =="__main__":
        reward += leaf.reward
     print(PATH)
     print(reward)
+"""#}}}

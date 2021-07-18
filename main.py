@@ -7,6 +7,8 @@ import argparse
 from drone_basestation import *
 
 # Tree constant example{{{
+# Number of iteration
+NUM_EPOCH=1000
 # Constant for UAV
 VEHICLE_VELOCITY = 10. # m/s
 TIME_STEP = 1 # s
@@ -39,6 +41,7 @@ def get_parser():#{{{
     parser.add_argument("--datarate-window", default=DATARATE_WINDOW, nargs='+', help="Datarate window")
     parser.add_argument("--initial-data", default=INITIAL_DATA, type=float, help="Initial data")
     parser.add_argument("--tree-depth", default=TREE_DEPTH, type=int, help="Tree depth")
+    parser.add_argument("--num-epoch", default=NUM_EPOCH, type=int, help="Tree depth")
     return parser#}}}
 
 if __name__ =="__main__":
@@ -69,7 +72,10 @@ if __name__ =="__main__":
 
     PATH = tree.pathfinder()
     reward = 0
-    for leaf in PATH:
-       reward += leaf.reward
+    time = 0
+    for node in PATH:
+       reward += node.reward
+       time += node.elapsed_time
     print(PATH)
     print(reward)
+    print(time)
