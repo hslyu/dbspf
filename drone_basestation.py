@@ -7,33 +7,16 @@ import numpy as np
 import random
 import math
 import time
-import copy
 
-# Constant for UAV
-VEHICLE_VELOCITY = 10. # m/s
-TIME_STEP = 1 # s
-MAX_TIME = 100
-## Constant for map
-MAP_WIDTH = 200 # meter, Both X and Y axis width
-MIN_ALTITUDE = 50 # meter
-MAX_ALTITUDE = 100 # meter
-GRID_SIZE = 10 # meter
-# Constant for user
-NUM_UE = 80
-TIME_WINDOW_SIZE = [5,5]
-DATARATE_WINDOW = [35, 60] # Requiring datarate Mb/s
-INITIAL_DATA = 10 # Mb
-# Tree depth
-TREE_DEPTH = 2
 # Constant for wirless communication
 FREQUENCY = 2.0*1e9 # Hz
 LIGHTSPEED = 3*1e8 # m/s
 BANDWIDTH = 1. # 20 MHz per unit
 POWER = 1. # 200 mW per unit
-NOISE_DENSITY = -174+50 # dBm/20MHz , noise spectral density, https://en.wikipedia.org/wiki/Johnson%E2%80%93Nyquist_noise 
+NOISE_DENSITY = -174+50 # dBm/20MHz , noise spectral density(Johnson-Nyquist_noise)
 LOS_EXCESSIVE = 1 # dB, excessive pathloss of los link
 NLOS_EXCESSIVE = 40 # dB, excessive pathloss of nlos link
-SURROUNDING_A = 9.64 # Envrionmental parameter for probablistic LOS link//10
+SURROUNDING_A = 9.64 # Envrionmental parameter for probablistic LOS link
 SURROUNDING_B = 0.04 # Envrionmental parameter for probablistic LOS link
 # Optimization hyperparameter
 EPSILON = 1e-9
@@ -42,8 +25,10 @@ THRESHOLD = 1e-7
 # etc
 INF = 1e8-1
 
-class User:
-    def __init__(self, uid=0, loc_x=0, loc_y=0, time_start=0, tw_size=0, datarate=0):#{{{
+class User:#{{{
+    def __init__(self, uid=0, loc_x=0, loc_y=0,\
+            time_start=0, tw_size=0, datarate=0,\
+            initial_data=0, max_data=0):
         self.id = uid
         self.position = [loc_x, loc_y]
         self.time_start = time_start
@@ -57,40 +42,42 @@ class User:
         self.snr = 0.
         # Total received throughput
         # Initial is not zero for our formulation
-        self.total_data = INITIAL_DATA
+        self.total_data = initial_data
 #        self.max_data = 3*self.datarate
-        self.max_data = INF
+        self.max_data = max_data
     
     def __str__(self):
         return "id: {}, (x,y) : ({:.2f}, {:.2f}), tw : [{}, {}], tw_size : {}".format(
-            self.node_id, self.location[0], self.location[1], self.time_start, self.time_end, self.tw_size)
+            self.id, self.position[0], self.position[1], self.time_start, self.time_end, self.time_end-self.time_start)
     
     def __repr__(self):
         return "{}".format(self.id)#}}}
 
 class TrajectoryNode:
     def __init__(self, position, parent=None):
-        # link
-        self.parent = parent
-        self.leafs = []
-        
         # value
         self.position = position
-        self.user_list = [User() for i in range(NUM_UE)]
-        if parent is not None:
-            self.user_copy(parent.user_list)
-            self.current_time = parent.current_time+1
-            self.reward = self.get_reward()
-#            self.reward = self.get_random_reward()
-            start = time.time()
-#            print("Reward is calculated from node and elapsed time:", self.position, time.time()-start)
+        # link
+        self.leafs = []
+
         # If this node is root
-        else:
+        if parent is None:
             self.reward = 0
             self.current_time = 0
+        else:
+            # Copy parent information
+            self.parent = parent
+            self.user_list = [User() for i in range(len(parent.user_list))]
+            self.copy_user(parent.user_list)
+            self.current_time = parent.current_time+1
 
-#        print(self.current_time)
-    def user_copy(self, user_list):
+            # Calculate reward
+            self.reward = self.get_reward()
+#            self.reward = self.get_random_reward()
+#            start = time.time()
+#            print("Reward is calculated from node and elapsed time:", self.position, time.time()-start)
+
+    def copy_user(self, user_list):
         for idx, user in enumerate(user_list):
             self.user_list[idx].id = user.id
             self.user_list[idx].position = user.position
@@ -138,10 +125,10 @@ class TrajectoryNode:
     def get_valid_user(self):
         valid_users = []#{{{
         # Find valid user set
-        for i in range(NUM_UE):
-            if self.user_list[i].time_start <= self.current_time <=self.user_list[i].time_end and \
-                    self.user_list[i].max_data > self.user_list[i].total_data:
-                valid_users.append(self.user_list[i])
+        for user in self.user_list:
+            if user.time_start <= self.current_time <= user.time_end and \
+                    user.max_data > user.total_data:
+                valid_users.append(user)
         # LIST OF VALID USERS}}}
         return valid_users
 
@@ -164,7 +151,7 @@ class TrajectoryNode:
         # Iteration of all possible user set.
         # Size of power set is 2^(size of set)
         # i is a decimal index of an element of power set
-        # ex) Size of valid_users: 5 --> Size of power set = 2^5
+        # ex) Size of vself.alid_users: 5 --> Size of power set = 2^5
         # if i=5 = 00101 (2) --> candidate_valid_user_list = [valid_users[0], valid_users[2]]
         # for more explanation, https://gist.github.com/hslyu/4b4267a76cd2a90d22fbb9957c915f1f 
         valid_users = self.get_valid_user()
@@ -408,14 +395,23 @@ class TrajectoryNode:
 
 #class UAV
 class TrajectoryTree:
-    def __init__(self, root):
+    def __init__(self, root, vehicle_velocity,\
+                time_step, grid_size,\
+                map_width, min_altitude, max_altitude,\
+                tree_depth, max_time):
         self.root = root
+        # Constants
+        self.vehicle_velocity = vehicle_velocity
+        self.time_step = time_step
+        self.grid_size = grid_size
+        self.map_width = map_width
+        self.min_altitude = min_altitude
+        self.max_altitude = max_altitude
+        self.tree_depth = tree_depth
+        self.max_time = max_time
         # Make adjacent node tree with TREE_DEPTH
         # Parenthesize self.root for recursive function implementation.
         self.recursive_find_leaf([self.root], node_level=0) 
-#        for i in range(100):
-#            print("first node reward calculation is done")
-#            print(root.leafs)
 
     # Depth First Search
     def DFS(self, current):
@@ -427,7 +423,7 @@ class TrajectoryTree:
         # Theorem : Subpath of optimal path is optimal of subpath.
         max_path = []
         # if reward return of self.DFS(node) MUST BE LARGER THAN -INF
-        max_reward = -INF
+        max_reward = -99999
         for i in range(len(current.leafs)):
             next_node = current.leafs[i]
             path, reward = self.DFS(next_node)
@@ -440,7 +436,7 @@ class TrajectoryTree:
 
     def recursive_find_leaf(self, leafs, node_level):
         # Terminate recursive function when it reaches to depth limit{{{
-        if node_level == TREE_DEPTH+1:
+        if node_level > self.tree_depth:
             # Save the leafs of DEPTH==TREE_DEPTH
             return
         node_level += 1
@@ -470,13 +466,13 @@ class TrajectoryTree:
                 # loop for z
                 while True:
                     # Check whether UAV can reach to adjacent grid node.
-                    if np.linalg.norm(GRID_SIZE*np.array([x,y,z])) <= VEHICLE_VELOCITY*TIME_STEP:
+                    if np.linalg.norm(self.grid_size*np.array([x,y,z])) <= self.vehicle_velocity*self.time_step:
                         # add all node with distance np.linalg.norm(GRID_SIZE*np.array([x,y,z]))
                         for i in {-1,1}:
                             for j in {-1,1}:
                                 for k in {-1, 1}:
                                     # calculate leaf position
-                                    leaf_position = node.position + GRID_SIZE*np.array([x*i, y*j, z*k])
+                                    leaf_position = node.position + self.grid_size*np.array([x*i, y*j, z*k])
                                     # Check whether 1. the position is available and 2. already appended.
                                     if self.isAvailable(leaf_position) and tuple(leaf_position) not in appended_table:
                                         leaf = TrajectoryNode(leaf_position, parent=node)
@@ -501,20 +497,25 @@ class TrajectoryTree:
         return leafs
 
     def isAvailable(self, position):
-        # If the position is in the map, return true.{{{
-        if 0 <= position[0] <= MAP_WIDTH and \
-           0 <= position[1] <= MAP_WIDTH and \
-           MIN_ALTITUDE <= position[2] <= MAX_ALTITUDE:
-               return True
+        #{{{
+        isAvailable = False
+        # If the position is in the map, return true.
+        isAvailable =  0 <= position[0] <= self.map_width and \
+                       0 <= position[1] <= self.map_width and \
+                       self.min_altitude <= position[2] <= self.max_altitude
+        ############################################################
         # If there's any forbidden place in the map, write code here
-
+        # isAvailable = isAvailable and (code here)
+        ############################################################
         # otherwise return false.
-        return False#}}}
+        return isAvailable
+        #}}}
 
-    def pathfinder(self, time_step):
-        PATH = []#{{{
-        for i in range(MAX_TIME):
-            PATH.append(self.root)
+    def pathfinder(self):
+        #{{{
+        path = []
+        for i in range(self.max_time):
+            path.append(self.root)
             # DFS return = reversed path, reward
             # a.DFS(a.root)[0] = reversed path = [last leaf, ... , first leaf, root]
             # reversed path[-2] = first leaf = next root
@@ -525,34 +526,34 @@ class TrajectoryTree:
             print("1 Unit recursive tree elapsed time:",time.time()-start)#}}}
             self.root.get_info()
 
-        return PATH
-
+        return path
 
 if __name__ =="__main__":
-    import time
     position = np.array([random.randint(0, MAP_WIDTH)//10*10,
                          random.randint(0, MAP_WIDTH)//10*10,
                          random.randint(MIN_ALTITUDE, MAX_ALTITUDE)//10*10])
     # Initial grid position of UAV
     root = TrajectoryNode(position)
+    # Make user list
     user_list = []
     for i in range(NUM_UE):
         tw_size = random.randint(TIME_WINDOW_SIZE[0], TIME_WINDOW_SIZE[1])
-        user = User(i,
-                random.randint(0, MAP_WIDTH),
-                random.randint(0, MAP_WIDTH),
-                random.randint(0, MAX_TIME-tw_size), 
-                tw_size,
-                random.randint(DATARATE_WINDOW[0], DATARATE_WINDOW[1]))
+        user = User(i, # id
+                random.randint(0, MAP_WIDTH), random.randint(0, MAP_WIDTH), # map
+                random.randint(0, MAX_TIME-tw_size), tw_size, # time window
+                random.randint(DATARATE_WINDOW[0], DATARATE_WINDOW[1]), # data
+                INITIAL_DATA, INF) # data
         user_list.append(user)
     root.user_list = user_list
 
-    tree = TrajectoryTree(root)
+    tree = TrajectoryTree(root, VEHICLE_VELOCITY,\
+                            TIME_STEP, GRID_SIZE,\
+                            MAP_WIDTH, MIN_ALTITUDE, MAX_ALTITUDE,\
+                            TREE_DEPTH, MAX_TIME)
 
-    PATH = tree.pathfinder(MAX_TIME)
+    PATH = tree.pathfinder()
     reward = 0
     for leaf in PATH:
        reward += leaf.reward
     print(PATH)
     print(reward)
-#    print TREE_DEPTH, time.time()-start}}}
