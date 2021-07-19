@@ -1,0 +1,21 @@
+{
+    "directory": "/root/mnt/dbspf/data",
+    "num_iteration": 5000,
+    "vehicle_velocity": 10.0,
+    "time_step": 1,
+    "max_time": 200,
+    "map_width": 200,
+    "min_altitude": 50,
+    "max_altitude": 100,
+    "grid_size": 10,
+    "num_ue": 80,
+    "time_window_size": [
+        3,
+        7
+    ],
+    "datarate_window": [
+        35,
+        60
+    ],
+    "initial_data": 10
+}

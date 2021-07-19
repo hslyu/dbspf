@@ -48,7 +48,7 @@ def environment_generator(parser):
         env_dict['user_list'] = user_list
 
         create_dir(os.path.join(args.directory, 'env'))
-        with open(os.path.join(args.directory,'env/env_{}.json'.format(i)), 'w') as f:
+        with open(os.path.join(args.directory, f'env/env_{i:04d}.json'), 'w') as f:
             json.dump(env_dict, f, ensure_ascii=False, indent=4)#}}}
 
 def load_args(path):
@@ -83,7 +83,7 @@ if __name__ =='__main__':
     # Tree constant example
     DIRECTORY_PATH = os.path.join(os.getcwd(),'data')
     # Number of iteration
-    NUM_ITERATION=1000
+    NUM_ITERATION=5000
     # Constant for UAV
     VEHICLE_VELOCITY = 10. # m/s
     TIME_STEP = 1 # s
