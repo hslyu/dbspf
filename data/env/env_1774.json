@@ -1,0 +1,970 @@
+{
+    "num_iteration": 1774,
+    "root_position": [
+        80,
+        140,
+        90
+    ],
+    "user_list": [
+        {
+            "id": 0,
+            "position": [
+                33,
+                197
+            ],
+            "time_start": 133,
+            "tw_size": 6,
+            "datarate": 48,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 1,
+            "position": [
+                168,
+                152
+            ],
+            "time_start": 151,
+            "tw_size": 4,
+            "datarate": 56,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 2,
+            "position": [
+                140,
+                106
+            ],
+            "time_start": 87,
+            "tw_size": 7,
+            "datarate": 41,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 3,
+            "position": [
+                162,
+                116
+            ],
+            "time_start": 58,
+            "tw_size": 7,
+            "datarate": 53,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 4,
+            "position": [
+                189,
+                135
+            ],
+            "time_start": 48,
+            "tw_size": 7,
+            "datarate": 56,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 5,
+            "position": [
+                169,
+                89
+            ],
+            "time_start": 27,
+            "tw_size": 5,
+            "datarate": 48,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 6,
+            "position": [
+                71,
+                183
+            ],
+            "time_start": 113,
+            "tw_size": 3,
+            "datarate": 56,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 7,
+            "position": [
+                189,
+                197
+            ],
+            "time_start": 154,
+            "tw_size": 6,
+            "datarate": 40,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 8,
+            "position": [
+                42,
+                123
+            ],
+            "time_start": 158,
+            "tw_size": 6,
+            "datarate": 51,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 9,
+            "position": [
+                38,
+                148
+            ],
+            "time_start": 191,
+            "tw_size": 5,
+            "datarate": 55,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 10,
+            "position": [
+                172,
+                43
+            ],
+            "time_start": 168,
+            "tw_size": 6,
+            "datarate": 42,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 11,
+            "position": [
+                19,
+                86
+            ],
+            "time_start": 0,
+            "tw_size": 5,
+            "datarate": 42,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 12,
+            "position": [
+                192,
+                192
+            ],
+            "time_start": 172,
+            "tw_size": 4,
+            "datarate": 37,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 13,
+            "position": [
+                96,
+                137
+            ],
+            "time_start": 178,
+            "tw_size": 5,
+            "datarate": 37,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 14,
+            "position": [
+                192,
+                167
+            ],
+            "time_start": 81,
+            "tw_size": 3,
+            "datarate": 37,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 15,
+            "position": [
+                64,
+                147
+            ],
+            "time_start": 79,
+            "tw_size": 6,
+            "datarate": 55,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 16,
+            "position": [
+                100,
+                197
+            ],
+            "time_start": 30,
+            "tw_size": 5,
+            "datarate": 51,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 17,
+            "position": [
+                122,
+                127
+            ],
+            "time_start": 133,
+            "tw_size": 6,
+            "datarate": 42,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 18,
+            "position": [
+                81,
+                62
+            ],
+            "time_start": 54,
+            "tw_size": 7,
+            "datarate": 56,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 19,
+            "position": [
+                31,
+                117
+            ],
+            "time_start": 72,
+            "tw_size": 3,
+            "datarate": 43,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 20,
+            "position": [
+                196,
+                148
+            ],
+            "time_start": 43,
+            "tw_size": 3,
+            "datarate": 53,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 21,
+            "position": [
+                173,
+                178
+            ],
+            "time_start": 103,
+            "tw_size": 6,
+            "datarate": 56,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 22,
+            "position": [
+                15,
+                84
+            ],
+            "time_start": 117,
+            "tw_size": 4,
+            "datarate": 42,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 23,
+            "position": [
+                51,
+                126
+            ],
+            "time_start": 156,
+            "tw_size": 5,
+            "datarate": 59,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 24,
+            "position": [
+                151,
+                29
+            ],
+            "time_start": 34,
+            "tw_size": 6,
+            "datarate": 59,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 25,
+            "position": [
+                60,
+                99
+            ],
+            "time_start": 78,
+            "tw_size": 4,
+            "datarate": 39,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 26,
+            "position": [
+                138,
+                32
+            ],
+            "time_start": 16,
+            "tw_size": 3,
+            "datarate": 57,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 27,
+            "position": [
+                27,
+                55
+            ],
+            "time_start": 159,
+            "tw_size": 5,
+            "datarate": 38,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 28,
+            "position": [
+                89,
+                67
+            ],
+            "time_start": 94,
+            "tw_size": 7,
+            "datarate": 56,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 29,
+            "position": [
+                29,
+                160
+            ],
+            "time_start": 108,
+            "tw_size": 5,
+            "datarate": 43,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 30,
+            "position": [
+                134,
+                91
+            ],
+            "time_start": 192,
+            "tw_size": 6,
+            "datarate": 55,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 31,
+            "position": [
+                171,
+                146
+            ],
+            "time_start": 191,
+            "tw_size": 3,
+            "datarate": 46,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 32,
+            "position": [
+                54,
+                45
+            ],
+            "time_start": 144,
+            "tw_size": 7,
+            "datarate": 51,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 33,
+            "position": [
+                185,
+                93
+            ],
+            "time_start": 39,
+            "tw_size": 4,
+            "datarate": 56,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 34,
+            "position": [
+                87,
+                58
+            ],
+            "time_start": 3,
+            "tw_size": 7,
+            "datarate": 50,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 35,
+            "position": [
+                121,
+                86
+            ],
+            "time_start": 103,
+            "tw_size": 3,
+            "datarate": 56,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 36,
+            "position": [
+                55,
+                120
+            ],
+            "time_start": 86,
+            "tw_size": 6,
+            "datarate": 35,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 37,
+            "position": [
+                178,
+                182
+            ],
+            "time_start": 179,
+            "tw_size": 5,
+            "datarate": 40,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 38,
+            "position": [
+                68,
+                188
+            ],
+            "time_start": 138,
+            "tw_size": 3,
+            "datarate": 37,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 39,
+            "position": [
+                200,
+                164
+            ],
+            "time_start": 38,
+            "tw_size": 3,
+            "datarate": 53,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 40,
+            "position": [
+                93,
+                146
+            ],
+            "time_start": 5,
+            "tw_size": 4,
+            "datarate": 38,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 41,
+            "position": [
+                81,
+                126
+            ],
+            "time_start": 73,
+            "tw_size": 4,
+            "datarate": 42,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 42,
+            "position": [
+                29,
+                120
+            ],
+            "time_start": 3,
+            "tw_size": 3,
+            "datarate": 57,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 43,
+            "position": [
+                144,
+                36
+            ],
+            "time_start": 121,
+            "tw_size": 7,
+            "datarate": 52,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 44,
+            "position": [
+                176,
+                153
+            ],
+            "time_start": 40,
+            "tw_size": 5,
+            "datarate": 54,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 45,
+            "position": [
+                110,
+                7
+            ],
+            "time_start": 79,
+            "tw_size": 6,
+            "datarate": 57,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 46,
+            "position": [
+                75,
+                25
+            ],
+            "time_start": 116,
+            "tw_size": 5,
+            "datarate": 42,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 47,
+            "position": [
+                158,
+                96
+            ],
+            "time_start": 33,
+            "tw_size": 4,
+            "datarate": 56,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 48,
+            "position": [
+                4,
+                196
+            ],
+            "time_start": 51,
+            "tw_size": 7,
+            "datarate": 36,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 49,
+            "position": [
+                26,
+                147
+            ],
+            "time_start": 119,
+            "tw_size": 5,
+            "datarate": 35,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 50,
+            "position": [
+                169,
+                90
+            ],
+            "time_start": 5,
+            "tw_size": 3,
+            "datarate": 59,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 51,
+            "position": [
+                143,
+                67
+            ],
+            "time_start": 62,
+            "tw_size": 5,
+            "datarate": 56,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 52,
+            "position": [
+                183,
+                78
+            ],
+            "time_start": 44,
+            "tw_size": 7,
+            "datarate": 55,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 53,
+            "position": [
+                142,
+                3
+            ],
+            "time_start": 58,
+            "tw_size": 6,
+            "datarate": 40,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 54,
+            "position": [
+                108,
+                34
+            ],
+            "time_start": 161,
+            "tw_size": 7,
+            "datarate": 60,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 55,
+            "position": [
+                194,
+                163
+            ],
+            "time_start": 7,
+            "tw_size": 5,
+            "datarate": 36,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 56,
+            "position": [
+                120,
+                60
+            ],
+            "time_start": 70,
+            "tw_size": 4,
+            "datarate": 51,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 57,
+            "position": [
+                93,
+                150
+            ],
+            "time_start": 172,
+            "tw_size": 4,
+            "datarate": 47,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 58,
+            "position": [
+                158,
+                101
+            ],
+            "time_start": 113,
+            "tw_size": 7,
+            "datarate": 45,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 59,
+            "position": [
+                163,
+                197
+            ],
+            "time_start": 160,
+            "tw_size": 4,
+            "datarate": 60,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 60,
+            "position": [
+                198,
+                77
+            ],
+            "time_start": 175,
+            "tw_size": 7,
+            "datarate": 53,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 61,
+            "position": [
+                179,
+                193
+            ],
+            "time_start": 30,
+            "tw_size": 5,
+            "datarate": 53,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 62,
+            "position": [
+                123,
+                84
+            ],
+            "time_start": 47,
+            "tw_size": 7,
+            "datarate": 45,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 63,
+            "position": [
+                50,
+                94
+            ],
+            "time_start": 124,
+            "tw_size": 7,
+            "datarate": 40,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 64,
+            "position": [
+                108,
+                38
+            ],
+            "time_start": 154,
+            "tw_size": 5,
+            "datarate": 42,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 65,
+            "position": [
+                57,
+                97
+            ],
+            "time_start": 14,
+            "tw_size": 7,
+            "datarate": 35,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 66,
+            "position": [
+                175,
+                68
+            ],
+            "time_start": 5,
+            "tw_size": 7,
+            "datarate": 38,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 67,
+            "position": [
+                163,
+                158
+            ],
+            "time_start": 106,
+            "tw_size": 6,
+            "datarate": 52,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 68,
+            "position": [
+                190,
+                134
+            ],
+            "time_start": 11,
+            "tw_size": 7,
+            "datarate": 55,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 69,
+            "position": [
+                57,
+                114
+            ],
+            "time_start": 191,
+            "tw_size": 4,
+            "datarate": 58,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 70,
+            "position": [
+                36,
+                11
+            ],
+            "time_start": 137,
+            "tw_size": 5,
+            "datarate": 39,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 71,
+            "position": [
+                89,
+                62
+            ],
+            "time_start": 133,
+            "tw_size": 3,
+            "datarate": 41,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 72,
+            "position": [
+                108,
+                14
+            ],
+            "time_start": 181,
+            "tw_size": 5,
+            "datarate": 36,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 73,
+            "position": [
+                162,
+                129
+            ],
+            "time_start": 168,
+            "tw_size": 6,
+            "datarate": 41,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 74,
+            "position": [
+                182,
+                70
+            ],
+            "time_start": 68,
+            "tw_size": 3,
+            "datarate": 40,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 75,
+            "position": [
+                23,
+                44
+            ],
+            "time_start": 132,
+            "tw_size": 6,
+            "datarate": 56,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 76,
+            "position": [
+                158,
+                6
+            ],
+            "time_start": 39,
+            "tw_size": 4,
+            "datarate": 48,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 77,
+            "position": [
+                121,
+                161
+            ],
+            "time_start": 96,
+            "tw_size": 5,
+            "datarate": 58,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 78,
+            "position": [
+                169,
+                26
+            ],
+            "time_start": 121,
+            "tw_size": 6,
+            "datarate": 37,
+            "total_data": 10,
+            "max_data": 999999
+        },
+        {
+            "id": 79,
+            "position": [
+                173,
+                57
+            ],
+            "time_start": 53,
+            "tw_size": 3,
+            "datarate": 39,
+            "total_data": 10,
+            "max_data": 999999
+        }
+    ]
+}

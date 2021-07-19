@@ -19,7 +19,7 @@ def get_parser():
 def save_result(data_path, env_index, total_reward, total_time, trajectory):
     result = {}
     result['configuration_path'] = os.path.join(data_path, 'args.json')
-    result['environment_path'] = os.path.join(data_path, 'env/env_{}.json'.format(env_index))
+    result['environment_path'] = os.path.join(data_path, f'env/env_{env_index:04d}.json')
     result['total_reward'] = total_reward
     result['total_time'] = total_time
 
@@ -36,7 +36,7 @@ def save_result(data_path, env_index, total_reward, total_time, trajectory):
         node_list.append(node_dict)
 
     result['trajectory'] = node_list
-    with open(os.path.join(data_path,'result/result_{}.json'.format(env_index)), 'w') as f:
+    with open(os.path.join(data_path, f'result/result_{env_index:04d}.json'), 'w') as f:
         json.dump(result, f, ensure_ascii=False, indent=4)
 
 if __name__ =="__main__":
