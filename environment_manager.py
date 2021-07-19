@@ -6,7 +6,6 @@
 import random
 import json
 import os
-import numpy as np
 from drone_basestation import User, TrajectoryNode
 
 def create_dir(directory):
@@ -48,7 +47,8 @@ def environment_generator(parser):
             user_list.append(user_data)
         env_dict['user_list'] = user_list
 
-        with open(os.path.join(args.directory,'env_{}.json'.format(i)), 'w') as f:
+        create_dir(os.path.join(args.directory, 'env'))
+        with open(os.path.join(args.directory,'env/env_{}.json'.format(i)), 'w') as f:
             json.dump(env_dict, f, ensure_ascii=False, indent=4)#}}}
 
 def load_args(path):
@@ -58,7 +58,7 @@ def load_args(path):
     return args#}}}
 
 def load_root(path, args, env_index):
-    with open(os.path.join(path,'env_{}.json'.format(env_index))) as f:#{{{
+    with open(os.path.join(path,'env/env_{}.json'.format(env_index))) as f:#{{{
         env = json.load(f)
         if env['num_iteration'] != env_index:
             print("FATAL ERROR (load_root) : iteration index is not matched")
@@ -67,7 +67,7 @@ def load_root(path, args, env_index):
 #            print("FATAL ERROR (load_root) : number of user is not matched")
 #            exit()
 
-        root = TrajectoryNode(np.array(env['root_position']))
+        root = TrajectoryNode(env['root_position'])
         
         user_list = []
         user_dict_list = env['user_list']
@@ -81,7 +81,7 @@ def load_root(path, args, env_index):
 if __name__ =='__main__':
     import argparse
     # Tree constant example
-    DIRECTORY_PATH = os.path.join(os.getcwd(),'env')
+    DIRECTORY_PATH = os.path.join(os.getcwd(),'data')
     # Number of iteration
     NUM_ITERATION=1000
     # Constant for UAV
@@ -103,18 +103,18 @@ if __name__ =='__main__':
         parser = argparse.ArgumentParser(description='Generate consistent random position',
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         parser.add_argument('--directory', default=DIRECTORY_PATH, type=str, help='Directory to save the environment')
-        parser.add_argument('--num-iteration', default=NUM_ITERATION, type=int, help='Total number of iteration')
-        parser.add_argument('--vehicle-velocity', default=VEHICLE_VELOCITY, type=float, help='Drone maximum velocity')
-        parser.add_argument('--time-step', default=TIME_STEP, type=int, help='Time unit for trajectory planning')
-        parser.add_argument('--max-time', default=MAX_TIME, type=int, help='Total time of trajectory planning')
+        parser.add_argument('--num_iteration', default=NUM_ITERATION, type=int, help='Total number of iteration')
+        parser.add_argument('--vehicle_velocity', default=VEHICLE_VELOCITY, type=float, help='Drone maximum velocity')
+        parser.add_argument('--time_step', default=TIME_STEP, type=int, help='Time unit for trajectory planning')
+        parser.add_argument('--max_time', default=MAX_TIME, type=int, help='Total time of trajectory planning')
         parser.add_argument('--map_width', default=MAP_WIDTH, type=int, help='Map width')
-        parser.add_argument('--min-altitude', default=MIN_ALTITUDE, type=int, help='Minimum altitude')
-        parser.add_argument('--max-altitude', default=MAX_ALTITUDE, type=int, help='Maximum altitude')
-        parser.add_argument('--grid-size', default=GRID_SIZE, type=float, help='Unit length of descritized map')
-        parser.add_argument('--num-ue', default=NUM_UE, type=int, help='Number of user')
-        parser.add_argument('--time-window-size', default=TIME_WINDOW_SIZE, nargs='+', help='Time window size')
-        parser.add_argument('--datarate-window', default=DATARATE_WINDOW, nargs='+', help='Datarate window')
-        parser.add_argument('--initial-data', default=INITIAL_DATA, type=float, help='Initial data')
+        parser.add_argument('--min_altitude', default=MIN_ALTITUDE, type=int, help='Minimum altitude')
+        parser.add_argument('--max_altitude', default=MAX_ALTITUDE, type=int, help='Maximum altitude')
+        parser.add_argument('--grid_size', default=GRID_SIZE, type=float, help='Unit length of descritized map')
+        parser.add_argument('--num_ue', default=NUM_UE, type=int, help='Number of user')
+        parser.add_argument('--time_window_size', default=TIME_WINDOW_SIZE, nargs='+', help='Time window size')
+        parser.add_argument('--datarate_window', default=DATARATE_WINDOW, nargs='+', help='Datarate window')
+        parser.add_argument('--initial_data', default=INITIAL_DATA, type=float, help='Initial data')
 
         return parser
 
