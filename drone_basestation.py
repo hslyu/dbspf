@@ -3,7 +3,6 @@
 # Depth first search(DFS) based UAV base station simulation code.
 # Author : Hyeonsu Lyu, POSTECH, Korea
 # Contact : hslyu4@postech.ac.kr
-import numpy as np 
 import random
 import math
 import time
@@ -64,14 +63,14 @@ class TrajectoryNode:#{{{
         self.elapsed_time = 0.
         # link
         self.leafs = []
+        self.parent = parent
 
         # If this node is root
-        if parent is None:
+        if self.parent is None:
             self.reward = 0
             self.current_time = 0
         else:
             # Copy parent information
-            self.parent = parent
             self.user_list = [User() for i in range(len(parent.user_list))]
             self.copy_user(parent.user_list)
             self.current_time = parent.current_time+1
@@ -81,6 +80,9 @@ class TrajectoryNode:#{{{
             self.reward = self.get_reward()
 #            self.reward = self.get_random_reward()
             self.elapsed_time = time.time()-start
+
+    def __repr__(self):
+        return '{}'.format(self.position)
 
     def copy_user(self, user_list):
         for idx, user in enumerate(user_list):
@@ -484,13 +486,13 @@ class TrajectoryTree:#{{{
                 # loop for z
                 while True:
                     # Check whether UAV can reach to adjacent grid node.
-                    if np.linalg.norm(self.grid_size*np.array([x,y,z])) <= self.vehicle_velocity*self.time_step:
-                        # add all node with distance np.linalg.norm(GRID_SIZE*np.array([x,y,z]))
+                    if self.grid_size*(x**2+y**2+z**2)**.5 <= self.vehicle_velocity*self.time_step:
+                        # add all node with distance |GRID_SIZE*(x,y,z)|^2_2
                         for i in {-1,1}:
                             for j in {-1,1}:
                                 for k in {-1, 1}:
                                     # calculate leaf position
-                                    leaf_position = node.position + self.grid_size*np.array([x*i, y*j, z*k])
+                                    leaf_position = [node_axis + self.grid_size*adjacent_axis for node_axis, adjacent_axis in zip(node.position, [x*i, y*j, z*k])]
                                     # Check whether 1. the position is available and 2. already appended.
                                     if self.isAvailable(leaf_position) and tuple(leaf_position) not in appended_table:
                                         leaf = TrajectoryNode(leaf_position, parent=node)
