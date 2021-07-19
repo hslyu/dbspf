@@ -58,7 +58,7 @@ def load_args(path):
     return args#}}}
 
 def load_root(path, args, env_index):
-    with open(os.path.join(path,'env/env_{}.json'.format(env_index))) as f:#{{{
+    with open(os.path.join(path,f'env/env_{env_index:04d}.json')) as f:#{{{
         env = json.load(f)
         if env['num_iteration'] != env_index:
             print("FATAL ERROR (load_root) : iteration index is not matched")

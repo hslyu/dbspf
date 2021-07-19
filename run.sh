@@ -1,6 +1,3 @@
 #!/bin/bash
 
-for i in {1..3} 
-do
-	python main.py -t $i
-done
+python main.py -t $1 --index_start $2 --index_end $3
