@@ -13,7 +13,7 @@ def get_parser():
     parser = argparse.ArgumentParser(description='Simulate drone base station with specific depth',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-t', '--tree_depth', type=int, help='Tree depth')
-    parser.add_argument('--data_path', default='/root/mnt/dbspf/data', type=str, help='Path of the environment directory')
+    parser.add_argument('--data_path', default=os.path.join(os.getcwd(), 'data'), type=str, help='Path of the environment directory')
     parser.add_argument('--index_start', default=0, type=int, help='Iteration start index')
     parser.add_argument('--index_end', type=int, help='Iteration end index')
     return parser
