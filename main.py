@@ -14,6 +14,8 @@ def get_parser():
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-t', '--tree_depth', type=int, help='Tree depth')
     parser.add_argument('--data_path', default='/root/mnt/dbspf/data', type=str, help='Path of the environment directory')
+    parser.add_argument('--index_start', default=0, type=int, help='Iteration start index')
+    parser.add_argument('--index_end', type=int, help='Iteration end index')
     return parser
 
 def save_result(data_path, env_index, total_reward, total_time, trajectory):
@@ -42,8 +44,11 @@ def save_result(data_path, env_index, total_reward, total_time, trajectory):
 if __name__ =="__main__":
     parser = get_parser()
     args = parser.parse_args()
+
     if not bool(args.tree_depth):
         parser.error("Tree depth must be specified. Usage: {} --tree-depth 3".format(__file__))
+    if not bool(args.index_end):
+        parser.error("End iteration index should be specified.".format(__file__))
 
     # Load environment
     env_args = em.load_args(args.data_path)
@@ -51,7 +56,7 @@ if __name__ =="__main__":
     em.create_dir(os.path.join(args.data_path, 'result'))
     
     # Load root node and start trajectory plannnig
-    for env_index in range(env_args.num_iteration):
+    for env_index in range(args.index_start, args.index_end):
         root = em.load_root(args.data_path, env_args, env_index)
         tree = dbs.TrajectoryTree(root, env_args.vehicle_velocity,
                                 env_args.time_step, env_args.grid_size,
