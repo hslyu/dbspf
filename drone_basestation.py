@@ -29,6 +29,7 @@ class User:#{{{
     def __init__(self, uid=0, position = [0, 0],\
             time_start=0, tw_size=0, datarate=0,\
             initial_data=0, max_data=0):
+        # ------------      Below attributes are constant       ------------ #
         self.id = uid
         self.position = position
         self.time_start = time_start
@@ -36,15 +37,18 @@ class User:#{{{
         # Requiring datarate b/s
         self.datarate = datarate
         # Temporary variables for easy implementation
-        self.se = 0.
+        self.max_data = max_data
+        self.pathloss = 0.
+        # ------------  Below attributes are control variables  ------------ #
         self.ra = 0.
         self.psd = 0.
+        # ------ Below attributes are variables determined by ra, psd ------ #
+        self.se = 0.
         self.snr = 0.
         # Total received throughput
         # Initial is not zero for our formulation
         self.total_data = initial_data
-#        self.max_data = 3*self.datarate
-        self.max_data = max_data
+        self.received_data = 0.
     
     def __str__(self):
         return "id: {}, (x,y) : ({:.2f}, {:.2f}), tw : [{}, {}], tw_size : {}".format(
@@ -72,11 +76,11 @@ class TrajectoryNode:#{{{
             self.copy_user(parent.user_list)
             self.current_time = parent.current_time+1
 
-#            start = time.time()
+            start = time.time()
             # Calculate reward
             self.reward = self.get_reward()
 #            self.reward = self.get_random_reward()
-#            print("Reward is calculated from node and elapsed time:", self.position, time.time()-start)
+            self.elapsed_time = time.time()-start
 
     def copy_user(self, user_list):
         for idx, user in enumerate(user_list):
@@ -87,6 +91,7 @@ class TrajectoryNode:#{{{
             self.user_list[idx].datarate = user.datarate
             self.user_list[idx].max_data = user.max_data
             self.user_list[idx].total_data = user.total_data
+            self.user_list[idx].pathloss = self.get_pathloss(self.position, user)
 
     def get_info(self):
         print("User throughput list (Mbps)")
@@ -100,55 +105,53 @@ class TrajectoryNode:#{{{
     def get_random_reward(self):
         return random.randint(0,10)
 
-    # Distance between the UAV and i-th User
     def distance_from_leaf(self, position, user):
+    """ 
+    Distance between the UAV and i-th User
+    """
         return math.sqrt( (position[0] - user.position[0])**2 +\
                  (position[1] - user.position[1])**2 + position[2]**2 )
 
-    # Caculate pathloss --> snr --> spectral efficiency
     def get_pathloss(self, position, user):
-        distance = self.distance_from_leaf(position, user)#{{{
+    """
+    Caculate pathloss --> snr --> spectral efficiency
+    """
+        distance = self.distance_from_leaf(position, user)
         angle = math.pi/2 - math.acos(position[2]/distance)
         los_prob = 1/(1 + SURROUNDING_A * \
                 math.exp(-SURROUNDING_B*(180/math.pi*angle - SURROUNDING_A)))
         pathloss = 20*math.log10(4*math.pi*FREQUENCY*distance/LIGHTSPEED) + los_prob*LOS_EXCESSIVE + \
-                    (1-los_prob)*NLOS_EXCESSIVE#}}}
+                    (1-los_prob)*NLOS_EXCESSIVE
         return pathloss
-    
-    # Because unit of psd is 200mW/20MHz, we should convert it to mw/Hz
+
     def psd2snr(self, psd, pathloss):
+    """ 
+    Because unit of psd is 200mW/20MHz, we should convert it to mw/Hz
+    """
         return 10*math.log10(psd) - pathloss - NOISE_DENSITY
-    # Because unit of resource is 20MHz,
-    # we should convert the unit of se from bps/Hz to Mbps/20MHz
+
     def snr2se(self,snr):
+    """
+    Because unit of resource is 20MHz,
+    we should convert the unit of se from bps/Hz to Mbps/20MHz
+    """
         return math.log(1+pow(10,snr/10),2)*20
 
     def get_valid_user(self):
-        valid_users = []#{{{
+        valid_users = []
         # Find valid user set
         for user in self.user_list:
             if user.time_start <= self.current_time <= user.time_end and \
                     user.max_data > user.total_data:
                 valid_users.append(user)
-        # LIST OF VALID USERS}}}
+        # LIST OF VALID USERS
         return valid_users
 
-    # Calculate reward
-    # start & end are 3d grid position.
-    def get_reward(self):
-        max_reward = 0#{{{
+    def get_reward(self):#{{{
+        max_reward = 0
         max_ra = []
         max_psd = []
         max_user_list = []
-        for user in self.user_list:
-            # initial psd of users
-            user.psd = POWER/BANDWIDTH
-            # SNR in dBm
-            user.pathloss = self.get_pathloss(self.position, user)
-            user.snr = self.psd2snr(user.psd, user.pathloss)
-            # Mbit/s/20MHz
-            user.se = self.snr2se(user.snr)
-
         # Iteration of all possible user set.
         # Size of power set is 2^(size of set)
         # i is a decimal index of an element of power set
@@ -164,6 +167,14 @@ class TrajectoryNode:#{{{
                 if i & 1<<j:
                     candidate_valid_user_list.append(valid_users[j])
 
+            # Initialize user psd, snr, and se.
+            for user in self.user_list:
+                # initial psd of users
+                user.psd = POWER/BANDWIDTH
+                # SNR in dBm
+                user.snr = self.psd2snr(user.psd, user.pathloss)
+                user.se = self.snr2se(user.snr)
+
             # Check feasibility of the candidate_valid_user_list
             required_resource = 0
             for user in candidate_valid_user_list:
@@ -174,10 +185,8 @@ class TrajectoryNode:#{{{
             if len(candidate_valid_user_list) == 0:
                 continue
 
-#            print("Current test user set:", candidate_valid_user_list)
             candidate_reward = 0
             ra = self.kkt_ra(candidate_valid_user_list)
-#            print("ra:",ra)
             prev_candidate_reward = self.objective_function([user.psd for user in candidate_valid_user_list],\
                     candidate_valid_user_list)
             count=0
@@ -197,7 +206,12 @@ class TrajectoryNode:#{{{
                 max_psd = psd
                 max_user_list = candidate_valid_user_list
 
-        for user, ra in zip(max_user_list, max_ra):
+        for user, ra, psd in zip(max_user_list, max_ra, max_psd):
+            self.user_list[user.id].ra = ra
+            self.user_list[user.id].psd = psd
+            user.snr = self.psd2snr(user.psd, user.pathloss)
+            user.se = self.snr2se(user.snr)
+            self.user_list[user.id].received_data = ra*user.se
             self.user_list[user.id].total_data += ra*user.se
 #        print("Current time:", self.current_time)
 #        print("max_psd:", max_psd)
@@ -205,15 +219,18 @@ class TrajectoryNode:#{{{
 #        print("Resource:", max_ra)
 #        print("Sum resource:", sum(max_ra))
 #        print("Throughput List", [user.total_data//10 for user in self.user_list])
-        # find max obj. ftn value (reward) and resource and power control}}}
-        return max_reward
+        # find max obj. ftn value (reward) and resource and power control
+        return max_reward#}}}
 
-    def kkt_ra(self, user_list):
-        # Use projected RMSProp for KKT dual problem{{{
-
-        # return 2+len(user_list) length gradient
-        def regularized_gradient(lambda_1, lambda_2, mu_list, user_list):
-            grad_list = []#{{{
+    def kkt_ra(self, user_list):#{{{
+    """
+    Use projected adagrad for KKT dual problem
+    """
+        def regularized_gradient(lambda_1, lambda_2, mu_list, user_list):#{{{
+        """
+        return 2+len(user_list) length gradient
+        """
+            grad_list = []
             grad_lambda_1 = 1.
             grad_lambda_2 = 1.
             for i, user in enumerate(user_list):
@@ -227,11 +244,11 @@ class TrajectoryNode:#{{{
             for i, user in enumerate(user_list):
                 grad_mu_i = 1./(lambda_1+user.psd*lambda_2-mu_list[i])\
                         - user.datarate/user.se - user.total_data/user.se
-                grad_list.append(grad_mu_i)#}}}
-            return grad_list
+                grad_list.append(grad_mu_i)
+            return grad_list#}}}
 
-        def regularized_dual_function(lambda_1, lambda_2, mu_list, user_list):
-            value = 0.#{{{
+        def regularized_dual_function(lambda_1, lambda_2, mu_list, user_list):#{{{
+            value = 0.
             for i, user in enumerate(user_list):
                 if lambda_1+user.psd*lambda_2-mu_list[i] < 0:
                     print(user.id)
@@ -244,8 +261,8 @@ class TrajectoryNode:#{{{
                 value += lambda_1*user.total_data/user.se
                 value += lambda_2*user.psd*user.total_data/user.se
             value += lambda_1
-            value += lambda_2#}}}
-            return value
+            value += lambda_2
+            return value#}}}
 
         # Initialize arguments of the dual function
         lambda_1 = .5
@@ -316,12 +333,10 @@ class TrajectoryNode:#{{{
 #        print("-------------------------")
         for user, resource in zip(user_list, resource_list):
             user.ra = resource
-        #}}}
-        return resource_list
+        
+        return resource_list#}}}
 
-    def kkt_psd(self, user_list):
-        #{{{
-
+    def kkt_psd(self, user_list):#{{{
         lambda_list=[]
         # 10^(-\xi/10)/n_0
         pl_over_noise_list = []
@@ -370,6 +385,8 @@ class TrajectoryNode:#{{{
 
         for user, psd in zip(user_list, max_psd_list):
             user.psd = psd
+            user.snr = self.psd2snr(user.psd, user.pathloss)
+            user.se = self.snr2se(user.snr)
 #        print('Minimum power:',sum([user.ra*c_rho_list[idx] for idx,user in enumerate(user_list)]))
 #        print("user:",user_list)
 #        print("muzero user:",[ user_list[idx] for idx in sorted_index[i:]])
@@ -379,11 +396,11 @@ class TrajectoryNode:#{{{
 #        print("diff:", [candidate_psd_list[a]-user.psd for a,user in enumerate(user_list)])
 #        print(sum([user.ra*candidate_psd_list[idx] for idx,user in enumerate(user_list)]))
 #        print('----')
-        #}}}
-        return max_psd_list
+        
+        return max_psd_list#}}}
 
-    def objective_function(self, psd_list, user_list):
-        value=0#{{{
+    def objective_function(self, psd_list, user_list):#{{{
+        value=0
         for psd, user in zip(psd_list, user_list):
             snr = self.psd2snr(psd, user.pathloss)
             se = self.snr2se(snr)
@@ -391,8 +408,9 @@ class TrajectoryNode:#{{{
                 print("psd, user.ra, se, user.total_data:", psd, user.ra, se, user.total_data)
                 print([user.ra for user in self.user_list])
             # user.ra = unit of 20MHz = 20 * unit of MHz
-            value += math.log(1+(user.ra*20)*se/user.total_data,2)#}}}
+            value += math.log(1+(user.ra*20)*se/user.total_data,2)
         return value#}}}
+    #}}}
 
 class TrajectoryTree:#{{{
     def __init__(self, root, vehicle_velocity,\
