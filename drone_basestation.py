@@ -106,16 +106,16 @@ class TrajectoryNode:#{{{
         return random.randint(0,10)
 
     def distance_from_leaf(self, position, user):
-    """ 
-    Distance between the UAV and i-th User
-    """
+        """ 
+        Distance between the UAV and i-th User
+        """
         return math.sqrt( (position[0] - user.position[0])**2 +\
                  (position[1] - user.position[1])**2 + position[2]**2 )
 
     def get_pathloss(self, position, user):
-    """
-    Caculate pathloss --> snr --> spectral efficiency
-    """
+        """
+        Caculate pathloss --> snr --> spectral efficiency
+        """
         distance = self.distance_from_leaf(position, user)
         angle = math.pi/2 - math.acos(position[2]/distance)
         los_prob = 1/(1 + SURROUNDING_A * \
@@ -125,16 +125,16 @@ class TrajectoryNode:#{{{
         return pathloss
 
     def psd2snr(self, psd, pathloss):
-    """ 
-    Because unit of psd is 200mW/20MHz, we should convert it to mw/Hz
-    """
+        """ 
+        Because unit of psd is 200mW/20MHz, we should convert it to mw/Hz
+        """
         return 10*math.log10(psd) - pathloss - NOISE_DENSITY
 
     def snr2se(self,snr):
-    """
-    Because unit of resource is 20MHz,
-    we should convert the unit of se from bps/Hz to Mbps/20MHz
-    """
+        """
+        Because unit of resource is 20MHz,
+        we should convert the unit of se from bps/Hz to Mbps/20MHz
+        """
         return math.log(1+pow(10,snr/10),2)*20
 
     def get_valid_user(self):
@@ -223,13 +223,13 @@ class TrajectoryNode:#{{{
         return max_reward#}}}
 
     def kkt_ra(self, user_list):#{{{
-    """
-    Use projected adagrad for KKT dual problem
-    """
+        """
+        Use projected adagrad for KKT dual problem
+        """
         def regularized_gradient(lambda_1, lambda_2, mu_list, user_list):#{{{
-        """
-        return 2+len(user_list) length gradient
-        """
+            """
+            return 2+len(user_list) length gradient
+            """
             grad_list = []
             grad_lambda_1 = 1.
             grad_lambda_2 = 1.
