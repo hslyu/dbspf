@@ -3,62 +3,67 @@
 # Depth first search(DFS) based UAV base station simulation code.
 # Author : Hyeonsu Lyu, POSTECH, Korea
 # Contact : hslyu4@postech.ac.kr
-import time
-from drone_basestation import *
 import argparse
-
-# Constant for UAV
-VEHICLE_VELOCITY = 10. # m/s
-TIME_STEP = 1 # s
-MAX_TIME = 40
-## Constant for map
-MAP_WIDTH = 200 # meter, Both X and Y axis width
-MIN_ALTITUDE = 50 # meter
-MAX_ALTITUDE = 100 # meter
-GRID_SIZE = 10 # meter
-# Constant for user
-NUM_UE = 20
-TIME_WINDOW_SIZE = [5,5]
-DATARATE_WINDOW = [35, 60] # Requiring datarate Mb/s
-INITIAL_DATA = 10 # Mb
-# Tree depth
-TREE_DEPTH = 1
+import os
+import json
+import environment_manager as em
+import drone_basestation as dbs
 
 def get_parser():
-    parser = argparse.ArgumentParser(description="Extract bounding boxes using Detectron2",
+    parser = argparse.ArgumentParser(description='Simulate drone base station with specific depth',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--video_input", help="Path to video file.")
-    parser.add_argument("--videos_input-dir", help="A directory of input videos. It also extracts ROI pooled features from the Faster R-CNN object detector.")
-    parser.add_argument("--images_input-dir", type=str, help="A directory of input images with extension *.jpg. The file names should be the frame number (e.g. 00000000001.jpg)")
-    parser.add_argument("--model_weights", type=str, default="detectron2://COCO-Detection/faster_rcnn_R_101_FPN_3x/137851257/model_final_f6e8b1.pkl", help="Detectron2 object detection model.")
+    parser.add_argument('-t', '--tree_depth', type=int, help='Tree depth')
+    parser.add_argument('--data_path', default='/root/mnt/dbspf/data', type=str, help='Path of the environment directory')
     return parser
 
+def save_result(data_path, env_index, total_reward, total_time, trajectory):
+    result = {}
+    result['configuration_path'] = os.path.join(data_path, 'args.json')
+    result['environment_path'] = os.path.join(data_path, 'env/env_{}.json'.format(env_index))
+    result['total_reward'] = total_reward
+    result['total_time'] = total_time
+
+    node_list = []
+    for node in trajectory:
+        node_dict = node.__dict__.copy()
+        # Delete recursive unserializable obejct "TrajectoryNode"
+        del node_dict['leafs']
+        if node.parent is not None:
+            node_dict['parent'] = node.parent.position
+        node_dict['user_list'] = []
+        for user in node.user_list:
+            node_dict['user_list'].append(user.__dict__)
+        node_list.append(node_dict)
+
+    result['trajectory'] = node_list
+    with open(os.path.join(data_path,'result/result_{}.json'.format(env_index)), 'w') as f:
+        json.dump(result, f, ensure_ascii=False, indent=4)
+
 if __name__ =="__main__":
-    position = np.array([random.randint(0, MAP_WIDTH)//10*10,
-                         random.randint(0, MAP_WIDTH)//10*10,
-                         random.randint(MIN_ALTITUDE, MAX_ALTITUDE)//10*10])
-    # Initial grid position of UAV
-    root = TrajectoryNode(position)
-    # Make user list
-    user_list = []
-    for i in range(NUM_UE):
-        tw_size = random.randint(TIME_WINDOW_SIZE[0], TIME_WINDOW_SIZE[1])
-        user = User(i, # id
-                random.randint(0, MAP_WIDTH), random.randint(0, MAP_WIDTH), # map
-                random.randint(0, MAX_TIME-tw_size), tw_size, # time window
-                random.randint(DATARATE_WINDOW[0], DATARATE_WINDOW[1]), # data
-                INITIAL_DATA, INF) # data
-        user_list.append(user)
-    root.user_list = user_list
+    parser = get_parser()
+    args = parser.parse_args()
+    if not bool(args.tree_depth):
+        parser.error("Tree depth must be specified. Usage: {} --tree-depth 3".format(__file__))
 
-    tree = TrajectoryTree(root, VEHICLE_VELOCITY,\
-                            TIME_STEP, GRID_SIZE,\
-                            MAP_WIDTH, MIN_ALTITUDE, MAX_ALTITUDE,\
-                            TREE_DEPTH, MAX_TIME)
+    # Load environment
+    env_args = em.load_args(args.data_path)
+    # Create directory to store the result
+    em.create_dir(os.path.join(args.data_path, 'result'))
+    
+    # Load root node and start trajectory plannnig
+    for env_index in range(env_args.num_iteration):
+        root = em.load_root(args.data_path, env_args, env_index)
+        tree = dbs.TrajectoryTree(root, env_args.vehicle_velocity,
+                                env_args.time_step, env_args.grid_size,
+                                env_args.map_width, env_args.min_altitude, env_args.max_altitude,
+                                args.tree_depth, env_args.max_time)
+        dbs_trajectory = tree.pathfinder()
+        total_reward = 0
+        total_time = 0
+        for node in dbs_trajectory:
+            total_reward += node.reward
+            total_time += node.elapsed_time
+        print(total_reward)
+        print(total_time)
+        save_result(args.data_path, env_index, total_reward, total_time, dbs_trajectory)
 
-    PATH = tree.pathfinder()
-    reward = 0
-    for leaf in PATH:
-       reward += leaf.reward
-    print(PATH)
-    print(reward)
