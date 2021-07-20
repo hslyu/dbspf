@@ -6,6 +6,11 @@ then
 	exit
 fi
 
+if [ ! -d './result' ]
+then
+	mkdir result
+fi
+
 for i in {2..11}
 do
 	num_user=$(($i * 5))
