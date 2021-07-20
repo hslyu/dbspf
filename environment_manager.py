@@ -54,7 +54,6 @@ def environment_generator(parser):
 def load_args(path):
     with open(os.path.join(path, 'args.json')) as f:#{{{
         args = json.load(f)
-        args = type('Arguments', (object,), args)
     return args#}}}
 
 def load_root(path, num_user, args, env_index):
