@@ -57,7 +57,7 @@ def load_args(path):
         args = type('Arguments', (object,), args)
     return args#}}}
 
-def load_root(path, args, env_index):
+def load_root(path, num_user, args, env_index):
     with open(os.path.join(path,f'env/env_{env_index:04d}.json')) as f:#{{{
         env = json.load(f)
         if env['num_iteration'] != env_index:
@@ -71,7 +71,7 @@ def load_root(path, args, env_index):
         
         user_list = []
         user_dict_list = env['user_list']
-        for user_dict in user_dict_list:
+        for user_dict in user_dict_list[0:num_user]:
             user = User(*user_dict.values())
             user_list.append(user)
         root.user_list = user_list
@@ -83,7 +83,7 @@ if __name__ =='__main__':
     # Tree constant example
     DIRECTORY_PATH = os.path.join(os.getcwd(),'data')
     # Number of iteration
-    NUM_ITERATION=5000
+    NUM_ITERATION=1000
     # Constant for UAV
     VEHICLE_VELOCITY = 10. # m/s
     TIME_STEP = 1 # s
@@ -94,7 +94,7 @@ if __name__ =='__main__':
     MAX_ALTITUDE = 100 # meter
     GRID_SIZE = 10 # meter
     # Constant for user
-    NUM_UE = 80
+    NUM_UE = 200
     TIME_WINDOW_SIZE = [3,7]
     DATARATE_WINDOW = [35, 60] # Requiring datarate Mb/s
     INITIAL_DATA = 10 # Mb
