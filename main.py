@@ -13,16 +13,19 @@ def get_parser():
     parser = argparse.ArgumentParser(description='Simulate drone base station with specific depth',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-t', '--tree_depth', type=int, help='Tree depth')
-    parser.add_argument('--data_path', default=os.path.join(os.getcwd(), 'data'), type=str, help='Path of the environment directory')
+    parser.add_argument('--env_path', default=os.path.join(os.getcwd(), 'data'), type=str, help='Path of the environment directory')
+    parser.add_argument('--result_path', default=os.path.join(os.getcwd(), 'result'), type=str, help='Path of the result directory')
     parser.add_argument('--num_user', type=int, help='Path of the environment directory')
     parser.add_argument('--index_start', default=0, type=int, help='Iteration start index')
     parser.add_argument('--index_end', type=int, help='Iteration end index')
     return parser
 
-def save_result(data_path, env_index, total_reward, total_time, trajectory):
+def save_result(file_name, result_dir, env_args, main_args, env_index, total_reward, total_time, trajectory):
     result = {}
-    result['configuration_path'] = os.path.join(data_path, 'args.json')
-    result['environment_path'] = os.path.join(data_path, f'env/env_{env_index:04d}.json')
+    result['environment_name'] = os.path.join(f'../data/env/env_{env_index:04d}.json')
+    result['env_args'] = env_args
+    result['tree_depth'] = main_args.tree_depth
+    result['num_user'] = main_args.num_user
     result['total_reward'] = total_reward
     result['total_time'] = total_time
 
@@ -39,36 +42,39 @@ def save_result(data_path, env_index, total_reward, total_time, trajectory):
         node_list.append(node_dict)
 
     result['trajectory'] = node_list
-    with open(os.path.join(data_path, f'result/result_{env_index:04d}.json'), 'w') as f:
+    with open(os.path.join(result_dir, f'env_{env_index:04d}-'+file_name), 'w') as f:
         json.dump(result, f, ensure_ascii=False, indent=4)
 
 if __name__ =="__main__":
     parser = get_parser()
-    args = parser.parse_args()
+    main_args = parser.parse_args()
 
-    if not bool(args.tree_depth):
+    if not bool(main_args.tree_depth):
         parser.error("Tree depth must be specified. Usage: {} --tree-depth 3".format(__file__))
-    if not bool(args.index_end):
-        parser.error("End iteration index should be specified.".format(__file__))
+    if not bool(main_args.index_end):
+        parser.error("End iteration index should be specified.")
+    if not bool(main_args.num_user):
+        parser.error("Number of user should be specified.")
 
     # Load environment
-    env_args = em.load_args(args.data_path)
+    env_args_dict = em.load_args(main_args.env_path)
+    env_args = type('Arguments', (object,), env_args_dict)
     # Create directory to store the result
-    em.create_dir(os.path.join(args.data_path, 'result'))
+    em.create_dir(main_args.result_path)
     
     # Load root node and start trajectory plannnig
-    for env_index in range(args.index_start, args.index_end):
-        root = em.load_root(args.data_path, args.num_user, env_args, env_index)
+    for env_index in range(main_args.index_start, main_args.index_end):
+        root = em.load_root(main_args.env_path, main_args.num_user, env_args, env_index)
         tree = dbs.TrajectoryTree(root, env_args.vehicle_velocity,
                                 env_args.time_step, env_args.grid_size,
                                 env_args.map_width, env_args.min_altitude, env_args.max_altitude,
-                                args.tree_depth, env_args.max_time)
+                                main_args.tree_depth, env_args.max_time)
         dbs_trajectory = tree.pathfinder()
         total_reward = 0
         total_time = 0
         for node in dbs_trajectory:
             total_reward += node.reward
             total_time += node.elapsed_time
-        save_result(args.data_path, env_index, total_reward, total_time, dbs_trajectory)
-        print(f'[{env_index-args.index_start+1}/{args.index_end-args.index_start}] Total reward: {total_reward:.2f}, Total time: {total_time}')
+        save_result(f'depth_{main_args.tree_depth}-ue_{main_args.num_user}', main_args.result_path, env_args_dict, main_args, env_index, total_reward, total_time, dbs_trajectory)
+        print(f'[{env_index-main_args.index_start+1}/{main_args.index_end-main_args.index_start}] Total reward: {total_reward:.2f}, Total time: {total_time}')
 
