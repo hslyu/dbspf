@@ -69,5 +69,5 @@ if __name__ =="__main__":
             total_reward += node.reward
             total_time += node.elapsed_time
         save_result(args.data_path, env_index, total_reward, total_time, dbs_trajectory)
-        print(f'[{env_index:04d}/{args.index_end-args.index_start}] Total reward: {total_reward:.2f}, Total time: {total_time}')
+        print(f'[{env_index-args.index_start+1}/{args.index_end-args.index_start}] Total reward: {total_reward:.2f}, Total time: {total_time}')
 
