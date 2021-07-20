@@ -14,6 +14,7 @@ def get_parser():
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-t', '--tree_depth', type=int, help='Tree depth')
     parser.add_argument('--data_path', default=os.path.join(os.getcwd(), 'data'), type=str, help='Path of the environment directory')
+    parser.add_argument('--num_user', type=int, help='Path of the environment directory')
     parser.add_argument('--index_start', default=0, type=int, help='Iteration start index')
     parser.add_argument('--index_end', type=int, help='Iteration end index')
     return parser
@@ -57,7 +58,7 @@ if __name__ =="__main__":
     
     # Load root node and start trajectory plannnig
     for env_index in range(args.index_start, args.index_end):
-        root = em.load_root(args.data_path, env_args, env_index)
+        root = em.load_root(args.data_path, args.num_user, env_args, env_index)
         tree = dbs.TrajectoryTree(root, env_args.vehicle_velocity,
                                 env_args.time_step, env_args.grid_size,
                                 env_args.map_width, env_args.min_altitude, env_args.max_altitude,
