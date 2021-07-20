@@ -543,9 +543,9 @@ class TrajectoryTree:#{{{
             self.root = self.DFS(self.root)[0][-2]
             self.recursive_find_leaf([self.root], 1) 
             self.root.elapsed_time = time.time()-start
-            print("current time:", i)
-            print("1 Unit recursive tree elapsed time:", self.root.elapsed_time)
-            self.root.get_info()
+#            print("current time:", i)
+#            print("1 Unit recursive tree elapsed time:", self.root.elapsed_time)
+#            self.root.get_info()
         return path
         #}}}#}}}
 
