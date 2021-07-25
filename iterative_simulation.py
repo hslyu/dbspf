@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 
-# Depth first search(DFS) based UAV base station simulation code.
+# Depth first search(DFS) based UAV base station iterative simulation code.
+# If you want to simulate just one environment, execute drone_basestation.py.
 # Author : Hyeonsu Lyu, POSTECH, Korea
 # Contact : hslyu4@postech.ac.kr
 import argparse
 import os
 import json
-import environment_manager as em
 import drone_basestation as dbs
+from drone_basestation import User, TrajectoryNode
+from utils import create_dir, open_json
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Simulate drone base station with specific depth',
@@ -19,6 +21,24 @@ def get_parser():
     parser.add_argument('--index_start', default=0, type=int, help='Iteration start index')
     parser.add_argument('--index_end', type=int, help='Iteration end index')
     return parser
+
+def load_root(path, num_user, args, env_index):
+    with open(os.path.join(path,f'env/env_{env_index:04d}.json')) as f:
+        env = json.load(f)
+        if env['num_iteration'] != env_index:
+            print("FATAL ERROR (load_root) : iteration index is not matched")
+            exit()
+
+        root = TrajectoryNode(env['root_position'])
+        
+        user_list = []
+        user_dict_list = env['user_list']
+        for user_dict in user_dict_list[0:num_user]:
+            user = User(*user_dict.values())
+            user_list.append(user)
+        root.user_list = user_list
+
+    return root
 
 def save_result(file_name, result_dir, env_args, main_args, env_index, total_reward, total_time, trajectory):
     result = {}
@@ -57,14 +77,15 @@ if __name__ =="__main__":
         parser.error("Number of user should be specified.")
 
     # Load environment
-    env_args_dict = em.load_args(main_args.env_path)
+    env_args_dict = open_json(os.path.join(main_args.env_path, 'args.json'))
+
     env_args = type('Arguments', (object,), env_args_dict)
     # Create directory to store the result
-    em.create_dir(main_args.result_path)
+    create_dir(main_args.result_path)
     
     # Load root node and start trajectory plannnig
     for env_index in range(main_args.index_start, main_args.index_end):
-        root = em.load_root(main_args.env_path, main_args.num_user, env_args, env_index)
+        root = load_root(main_args.env_path, main_args.num_user, env_args, env_index)
         tree = dbs.TrajectoryTree(root, env_args.vehicle_velocity,
                                 env_args.time_step, env_args.grid_size,
                                 env_args.map_width, env_args.min_altitude, env_args.max_altitude,

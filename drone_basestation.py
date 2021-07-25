@@ -25,17 +25,18 @@ THRESHOLD = 1e-7
 INF = 1e8-1#}}}
 
 class User:#{{{
-    def __init__(self, uid=0, position = [0, 0],\
-            time_start=0, tw_size=0, datarate=0,\
+    def __init__(self, uid=0, position = [0, 0],
+            time_start=0, tw_size=0, time_period=0, datarate=0,
             initial_data=0, max_data=0):
         # ------------      Below attributes are constant       ------------ #
         self.id = uid
         self.position = position
         self.time_start = time_start
         self.time_end = self.time_start + tw_size
+        self.time_period = time_period
+        self.serviced_time = 0
         # Requiring datarate b/s
         self.datarate = datarate
-        # Temporary variables for easy implementation
         self.max_data = max_data
         self.pathloss = 0.
         # ------------  Below attributes are control variables  ------------ #
@@ -67,13 +68,13 @@ class TrajectoryNode:#{{{
 
         # If this node is root
         if self.parent is None:
-            self.reward = 0
             self.current_time = 0
+            self.reward = 0
         else:
             # Copy parent information
+            self.current_time = parent.current_time+1
             self.user_list = [User() for i in range(len(parent.user_list))]
             self.copy_user(parent.user_list)
-            self.current_time = parent.current_time+1
 
             start = time.time()
             # Calculate reward
@@ -90,14 +91,20 @@ class TrajectoryNode:#{{{
             self.user_list[idx].position = user.position
             self.user_list[idx].time_start = user.time_start
             self.user_list[idx].time_end = user.time_end
+            self.user_list[idx].time_period = user.time_period
+            self.user_list[idx].serviced_time = user.serviced_time
             self.user_list[idx].datarate = user.datarate
             self.user_list[idx].max_data = user.max_data
             self.user_list[idx].total_data = user.total_data
             self.user_list[idx].pathloss = self.get_pathloss(self.position, user)
+            if self.current_time % user.time_period == 0:
+                self.user_list[idx].received_data = 0
+            else:
+                self.user_list[idx].received_data = user.received_data
 
     def get_info(self):
         print("User throughput list (Mbps)")
-        print([user.total_data//max(user.time_start-user.time_end,self.current_time) for user in self.user_list])
+        print([0 if user.serviced_time == 0 else user.total_data//(user.serviced_time) for user in self.user_list])
         print("User total data (Mb)")
         print([user.total_data//1 for user in self.user_list])
 
@@ -143,8 +150,8 @@ class TrajectoryNode:#{{{
         valid_users = []
         # Find valid user set
         for user in self.user_list:
-            if user.time_start <= self.current_time <= user.time_end and \
-                    user.max_data > user.total_data:
+            if user.time_start <= self.current_time%user.time_period <= user.time_end and \
+                    user.max_data > user.received_data:
                 valid_users.append(user)
         # LIST OF VALID USERS
         return valid_users
@@ -213,8 +220,9 @@ class TrajectoryNode:#{{{
             self.user_list[user.id].psd = psd
             user.snr = self.psd2snr(user.psd, user.pathloss)
             user.se = self.snr2se(user.snr)
-            self.user_list[user.id].received_data = ra*user.se
+            self.user_list[user.id].received_data += ra*user.se
             self.user_list[user.id].total_data += ra*user.se
+            user.serviced_time += 1
 #        print("Current time:", self.current_time)
 #        print("max_psd:", max_psd)
 #        print("power:", sum([psd*ra for psd, ra in zip(max_psd,max_ra)]))
@@ -222,7 +230,8 @@ class TrajectoryNode:#{{{
 #        print("Sum resource:", sum(max_ra))
 #        print("Throughput List", [user.total_data//10 for user in self.user_list])
         # find max obj. ftn value (reward) and resource and power control
-        return max_reward#}}}
+        return max_reward
+    #}}}
 
     def kkt_ra(self, user_list):#{{{
         """
@@ -543,29 +552,52 @@ class TrajectoryTree:#{{{
             self.root = self.DFS(self.root)[0][-2]
             self.recursive_find_leaf([self.root], 1) 
             self.root.elapsed_time = time.time()-start
-#            print("current time:", i)
-#            print("1 Unit recursive tree elapsed time:", self.root.elapsed_time)
-#            self.root.get_info()
+            print("current time:", i)
+            print("1 Unit recursive tree elapsed time:", self.root.elapsed_time)
+            self.root.get_info()
         return path
         #}}}#}}}
 
+#"""
 #{{{
-"""
 if __name__ =="__main__":
-    position = np.array([random.randint(0, MAP_WIDTH)//10*10,
-                         random.randint(0, MAP_WIDTH)//10*10,
-                         random.randint(MIN_ALTITUDE, MAX_ALTITUDE)//10*10])
+    # Number of iteration
+    NUM_ITERATION=1000
+    # Constant for UAV
+    VEHICLE_VELOCITY = 10. # m/s
+    TIME_STEP = 1 # s
+    MAX_TIME = 200 # unit of (TIME_STEP) s
+    ## Constant for map
+    MAP_WIDTH = 200 # meter, Both X and Y axis width
+    MIN_ALTITUDE = 50 # meter
+    MAX_ALTITUDE = 100 # meter
+    GRID_SIZE = 10 # meter
+    # Constant for user
+    NUM_UE = 40
+    TIME_WINDOW_SIZE = [3,5]
+    TIME_PERIOD_SIZE = [50,70]
+    DATARATE_WINDOW = [35, 60] # Requiring datarate Mb/s
+    INITIAL_DATA = 10 # Mb
+    TREE_DEPTH = 1
+
+    position = [random.randint(0, MAP_WIDTH)//10*10,
+                 random.randint(0, MAP_WIDTH)//10*10,
+                 random.randint(MIN_ALTITUDE, MAX_ALTITUDE)//10*10]
     # Initial grid position of UAV
     root = TrajectoryNode(position)
     # Make user list
     user_list = []
+#    def __init__(self, uid=0, position = [0, 0],
+#            time_start=0, tw_size=0, time_period=0, datarate=0,
+#            initial_data=0, max_data=0):
     for i in range(NUM_UE):
         tw_size = random.randint(TIME_WINDOW_SIZE[0], TIME_WINDOW_SIZE[1])
+        time_period = random.randint(TIME_PERIOD_SIZE[0], TIME_PERIOD_SIZE[1])
+        datarate = random.randint(DATARATE_WINDOW[0], DATARATE_WINDOW[1])
         user = User(i, # id
-                random.randint(0, MAP_WIDTH), random.randint(0, MAP_WIDTH), # map
-                random.randint(0, MAX_TIME-tw_size), tw_size, # time window
-                random.randint(DATARATE_WINDOW[0], DATARATE_WINDOW[1]), # data
-                INITIAL_DATA, INF) # data
+                [random.randint(0, MAP_WIDTH), random.randint(0, MAP_WIDTH)], # position
+                random.randint(0, time_period-tw_size), tw_size, time_period, # time window
+                datarate, INITIAL_DATA, 4*datarate) # data
         user_list.append(user)
     root.user_list = user_list
 
@@ -580,4 +612,5 @@ if __name__ =="__main__":
        reward += leaf.reward
     print(PATH)
     print(reward)
-"""#}}}
+#}}}
+#"""
