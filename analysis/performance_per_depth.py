@@ -8,13 +8,9 @@ import json
 import os
 import pickle
 import matplotlib.pyplot as plt
+from open_json import open_json
 
 dir_path = 'analysis/some-value_per_depth/'
-
-def open_json(file_path):
-    with open(file_path, encoding='utf-8') as f:
-        result = json.load(f)
-    return result
 
 def plot_time_reward_per_ue(depth,dir_path):#{{{
     with open(dir_path+'time_per_depth.pkl', 'rb') as f:
