@@ -20,7 +20,7 @@ for i in {2..11}
 do
 	num_user=$(($i * 5))
 	result_dir="./result/result-depth_$DEPTH-user_$num_user"
-	python main.py -t $DEPTH --num_user $num_user --result_path $result_dir --index_start $INDEX_START --index_end $INDEX_END
+	python iterative_simulation.py -t $DEPTH --num_user $num_user --result_path $result_dir --index_start $INDEX_START --index_end $INDEX_END
 	echo "Computation for depth $DEPTH and user $num_user is done."
 	echo "----------------------------------------------------"
 done
