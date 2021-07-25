@@ -92,7 +92,7 @@ if __name__=="__main__":
             total_data = 0
             total_data_square = 0
             for env_index in range(num_env):
-                filename = f'env_{env_index:04d}-depth_{depth}-ue_{num_ue}'
+                filename = f'env_{env_index:04d}-depth_{depth}-ue_{num_ue}.json'
                 result = open_json(os.path.join(dirname,filename))
                 total_time += result['total_time']
                 total_reward += result['total_reward']
