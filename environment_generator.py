@@ -43,7 +43,7 @@ def get_parser():
     parser.add_argument('--grid_size', default=GRID_SIZE, type=float, help='Unit length of descritized map')
     parser.add_argument('--num_ue', default=NUM_UE, type=int, help='Number of user')
     parser.add_argument('--time_window_size', default=TIME_WINDOW_SIZE, nargs='+', help='Time window size')
-    parser.add_argument('--time_period_size', default=TIME_WINDOW_SIZE, nargs='+', help='Time period size')
+    parser.add_argument('--time_period_size', default=TIME_PERIOD_SIZE, nargs='+', help='Time period size')
     parser.add_argument('--datarate_window', default=DATARATE_WINDOW, nargs='+', help='Datarate window')
     parser.add_argument('--initial_data', default=INITIAL_DATA, type=float, help='Initial data')
 
@@ -51,7 +51,7 @@ def get_parser():
 
 def environment_generator(parser):
     args = parser.parse_args()
-    create_dir(args.directory)
+    create_dir(os.path.join(args.directory, 'env'))
 
     with open(os.path.join(args.directory,'args.json'), 'w') as f:
         json.dump(args.__dict__, f, ensure_ascii=False, indent=4)
@@ -81,7 +81,6 @@ def environment_generator(parser):
             user_list.append(user_data)
         env_dict['user_list'] = user_list
 
-        create_dir(os.path.join(args.directory, 'env'))
         with open(os.path.join(args.directory, f'env/env_{i:04d}.json'), 'w') as f:
             json.dump(env_dict, f, ensure_ascii=False, indent=4)
 
