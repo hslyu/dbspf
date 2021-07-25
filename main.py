@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-# Depth first search(DFS) based UAV base station simulation code.
+# Depth first search(DFS) based UAV base station iterative simulation code.
+# If you want to simulate just one environment, execute drone_basestation.py.
 # Author : Hyeonsu Lyu, POSTECH, Korea
 # Contact : hslyu4@postech.ac.kr
 import argparse
