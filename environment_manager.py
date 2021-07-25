@@ -38,12 +38,14 @@ def environment_generator(parser):
             user_data = {}
             user_data['id'] = j
             tw_size = random.randint(args.time_window_size[0], args.time_window_size[1])
+            time_period = random.randint(args.time_period_size[0], args.time_period_size[1])
             user_data['position'] = [random.randint(0, args.map_width), random.randint(0, args.map_width)]
-            user_data['time_start'] = random.randint(0, args.max_time-tw_size)
+            user_data['time_start'] = random.randint(0, time_period-tw_size)
             user_data['tw_size'] = tw_size
+            user_data['time_period'] = time_period
             user_data['datarate'] = random.randint(args.datarate_window[0], args.datarate_window[1])
             user_data['total_data'] = args.initial_data
-            user_data['max_data'] = 999999
+            user_data['max_data'] = random.randint(3,5)*user_data['datarate']
             user_list.append(user_data)
         env_dict['user_list'] = user_list
 
@@ -95,6 +97,7 @@ if __name__ =='__main__':
     # Constant for user
     NUM_UE = 200
     TIME_WINDOW_SIZE = [3,7]
+    TIME_PERIOD_SIZE = [30,50]
     DATARATE_WINDOW = [35, 60] # Requiring datarate Mb/s
     INITIAL_DATA = 10 # Mb
 
@@ -112,6 +115,7 @@ if __name__ =='__main__':
         parser.add_argument('--grid_size', default=GRID_SIZE, type=float, help='Unit length of descritized map')
         parser.add_argument('--num_ue', default=NUM_UE, type=int, help='Number of user')
         parser.add_argument('--time_window_size', default=TIME_WINDOW_SIZE, nargs='+', help='Time window size')
+        parser.add_argument('--time_period_size', default=TIME_WINDOW_SIZE, nargs='+', help='Time period size')
         parser.add_argument('--datarate_window', default=DATARATE_WINDOW, nargs='+', help='Datarate window')
         parser.add_argument('--initial_data', default=INITIAL_DATA, type=float, help='Initial data')
 
