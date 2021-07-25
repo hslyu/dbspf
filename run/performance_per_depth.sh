@@ -2,7 +2,7 @@
 
 if [ $# -lt 3 ]
 then
-	echo "Depth, index_start and index_end should be specified. Usage: $0 {DEPTH} {index_start} {index_end}"
+	echo "Depth, index_start and index_end should be specified. Usage: $0 <DEPTH> <env_index_start> <env_index_end>"
 	exit
 fi
 
