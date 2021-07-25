@@ -9,6 +9,8 @@ import os
 import pickle
 import matplotlib.pyplot as plt
 
+dir_path = 'analysis/some-value_per_depth/'
+
 def open_json(file_path):
     with open(file_path, encoding='utf-8') as f:
         result = json.load(f)
@@ -75,7 +77,6 @@ if __name__=="__main__":
     depth = 5
     master_dir = os.path.join(os.getcwd(),'result')
     num_user_list = list(range(10,56,5))
-    dir_path = 'analysis/val_per_depth/'
 
 
     '''
