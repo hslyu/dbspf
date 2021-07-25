@@ -61,10 +61,10 @@ def plot_time_reward_per_ue(depth,dir_path):#{{{
     plot5 = plt.figure(5)
     for idx in range(depth):
         plt.plot(num_user_list, 
-                reward_per_depth[idx],
+                [reward/200 for reward in reward_per_depth[idx]],
                 label = f'depth{idx+1}')
     plt.xlabel("Number of user")
-    plt.ylabel("Reward per user")
+    plt.ylabel("Reward per depth")
     plt.legend()
     plt.show()#}}}
 
