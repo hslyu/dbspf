@@ -6,15 +6,7 @@
 import random
 import json
 import os
-
-def create_dir(directory):
-    try:#{{{
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-#        else:
-#            print('Directory already exists: ' + directory)
-    except OSError:
-        print('Fail to create diretory: ' +  directory)#}}}
+from utils import create_dir
 
 def environment_generator(parser):
     args = parser.parse_args()#{{{

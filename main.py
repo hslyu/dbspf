@@ -9,7 +9,7 @@ import os
 import json
 import drone_basestation as dbs
 from drone_basestation import User, TrajectoryNode
-import environment_manager as em
+from utils import create_dir, open_json
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Simulate drone base station with specific depth',
@@ -22,20 +22,12 @@ def get_parser():
     parser.add_argument('--index_end', type=int, help='Iteration end index')
     return parser
 
-def load_args(path):
-    with open(os.path.join(path, 'args.json')) as f:#{{{
-        args = json.load(f)
-    return args#}}}
-
 def load_root(path, num_user, args, env_index):
-    with open(os.path.join(path,f'env/env_{env_index:04d}.json')) as f:#{{{
+    with open(os.path.join(path,f'env/env_{env_index:04d}.json')) as f:
         env = json.load(f)
         if env['num_iteration'] != env_index:
             print("FATAL ERROR (load_root) : iteration index is not matched")
             exit()
-#        elif len(user_dict_list) != args.num_ue:
-#            print("FATAL ERROR (load_root) : number of user is not matched")
-#            exit()
 
         root = TrajectoryNode(env['root_position'])
         
@@ -46,7 +38,7 @@ def load_root(path, num_user, args, env_index):
             user_list.append(user)
         root.user_list = user_list
 
-    return root#}}}
+    return root
 
 def save_result(file_name, result_dir, env_args, main_args, env_index, total_reward, total_time, trajectory):
     result = {}
@@ -74,10 +66,6 @@ def save_result(file_name, result_dir, env_args, main_args, env_index, total_rew
         json.dump(result, f, ensure_ascii=False, indent=4)
 
 if __name__ =="__main__":
-#    # Load environment
-#    args = load_args(DIRECTORY_PATH)
-#    for i in range(args.num_iteration):
-#        root = load_root(DIRECTORY_PATH, args, i)
     parser = get_parser()
     main_args = parser.parse_args()
 
@@ -89,10 +77,11 @@ if __name__ =="__main__":
         parser.error("Number of user should be specified.")
 
     # Load environment
-    env_args_dict = load_args(main_args.env_path)
+    env_args_dict = open_json(os.path.join(main_args.env_path, 'args.json'))
+
     env_args = type('Arguments', (object,), env_args_dict)
     # Create directory to store the result
-    em.create_dir(main_args.result_path)
+    create_dir(main_args.result_path)
     
     # Load root node and start trajectory plannnig
     for env_index in range(main_args.index_start, main_args.index_end):

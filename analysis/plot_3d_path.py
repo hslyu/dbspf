@@ -4,13 +4,18 @@
 # Author : Hyeonsu Lyu, POSTECH, Korea
 # Contact : hslyu4@postech.ac.kr
 
-from open_json import open_json
+import argparse
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.proj3d import proj_transform
 from mpl_toolkits.mplot3d.axes3d import Axes3D
 from matplotlib.text import Annotation
-import argparse
-import numpy as np
+
+# Import parent directory
+import os,sys,inspect
+current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
+from utils import open_json
 
 class Annotation3D(Annotation):	#{{{
     '''
@@ -83,6 +88,7 @@ if __name__=='__main__':
     args = parser.parse_args()
     if not bool(args.file_path):
         parser.error('File path must be specified.')
+        parser.error(f'Usage: {__file__} --file_path <file_path>')
         parser.error(f'Usage: {__file__} --file_path <file_path>')
 
     plot_3d_graph(args.file_path)
