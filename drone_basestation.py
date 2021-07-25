@@ -104,7 +104,7 @@ class TrajectoryNode:#{{{
 
     def get_info(self):
         print("User throughput list (Mbps)")
-        print([user.total_data//(user.serviced_time) for user in self.user_list])
+        print([0 if user.serviced_time == 0 else user.total_data//(user.serviced_time) for user in self.user_list])
         print("User total data (Mb)")
         print([user.total_data//1 for user in self.user_list])
 
