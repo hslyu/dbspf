@@ -104,7 +104,7 @@ class TrajectoryNode:#{{{
 
     def get_info(self):
         print("User throughput list (Mbps)")
-        print([user.total_data//(user.serviced_time) if user.serviced_time != 0 else 0  for user in self.user_list])
+        print([user.total_data//(user.serviced_time) for user in self.user_list])
         print("User total data (Mb)")
         print([user.total_data//1 for user in self.user_list])
 
@@ -560,25 +560,26 @@ class TrajectoryTree:#{{{
 
 #"""
 #{{{
-# Number of iteration
-NUM_ITERATION=1000
-# Constant for UAV
-VEHICLE_VELOCITY = 10. # m/s
-TIME_STEP = 1 # s
-MAX_TIME = 200 # unit of (TIME_STEP) s
-## Constant for map
-MAP_WIDTH = 200 # meter, Both X and Y axis width
-MIN_ALTITUDE = 50 # meter
-MAX_ALTITUDE = 100 # meter
-GRID_SIZE = 10 # meter
-# Constant for user
-NUM_UE = 40
-TIME_WINDOW_SIZE = [3,5]
-TIME_PERIOD_SIZE = [50,70]
-DATARATE_WINDOW = [35, 60] # Requiring datarate Mb/s
-INITIAL_DATA = 10 # Mb
-TREE_DEPTH = 1
 if __name__ =="__main__":
+    # Number of iteration
+    NUM_ITERATION=1000
+    # Constant for UAV
+    VEHICLE_VELOCITY = 10. # m/s
+    TIME_STEP = 1 # s
+    MAX_TIME = 200 # unit of (TIME_STEP) s
+    ## Constant for map
+    MAP_WIDTH = 200 # meter, Both X and Y axis width
+    MIN_ALTITUDE = 50 # meter
+    MAX_ALTITUDE = 100 # meter
+    GRID_SIZE = 10 # meter
+    # Constant for user
+    NUM_UE = 40
+    TIME_WINDOW_SIZE = [3,5]
+    TIME_PERIOD_SIZE = [50,70]
+    DATARATE_WINDOW = [35, 60] # Requiring datarate Mb/s
+    INITIAL_DATA = 10 # Mb
+    TREE_DEPTH = 1
+
     position = [random.randint(0, MAP_WIDTH)//10*10,
                  random.randint(0, MAP_WIDTH)//10*10,
                  random.randint(MIN_ALTITUDE, MAX_ALTITUDE)//10*10]
