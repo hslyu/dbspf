@@ -308,7 +308,7 @@ class TrajectoryNode:#{{{
 #                print("Input:", [lambda_1, 1e-5*lambda_2]+mu_list )
 #                print("Count:",count)
 #                print("-------------------------")
-
+#
             # Stop condition
             gap = regularized_dual_function(prev_lambda_1, prev_lambda_2, prev_mu_list, user_list) \
                    - regularized_dual_function(lambda_1, lambda_2, mu_list, user_list)
@@ -326,7 +326,7 @@ class TrajectoryNode:#{{{
 #        print("Final values:", [lambda_1, lambda_2]+mu_list )
 #        print("Count:", count)
 #        print("Time:", time.time()-start)
-#        print("Origianl resource list, sum:",resource_list, sum(resource_list))
+#        print("Origianl resource list, sum:", f'{sum(resource_list):.2f}', resource_list)
 #        sum_resource = sum(resource_list)
 #        resource_list = [resource + (BANDWIDTH-sum_resource)/len(resource_list) for resource in resource_list]
 #        resource_list = [BANDWIDTH*resource/sum_resource for resource in resource_list]
@@ -353,7 +353,7 @@ class TrajectoryNode:#{{{
         pl_over_noise_list = []
         c_rho_list = []
         for idx, user in enumerate(user_list):
-            pl_over_noise = 10**(user.pathloss/NOISE_DENSITY/10.)
+            pl_over_noise = 10**((user.pathloss-NOISE_DENSITY)/10.)
             pl_over_noise_list.append(pl_over_noise)
             # user.ra = unit of 20MHz = 20 * unit of MHz
             c_rho_list.append((pow(2,user.datarate/(user.ra*20))-1)/pl_over_noise)
@@ -361,10 +361,11 @@ class TrajectoryNode:#{{{
         # return the sorted index list of the user lambda_list
         sorted_index = sorted(range(len(user_list)), key=lambda k: lambda_list[k])
 
-        max_objective_value = 0
+        max_objective_value = -99999
         max_psd_list = []
         max_sorted_index = []
         for i in range(len(user_list)):
+#        for i in range(1):
             term_1 = 0
             term_2 = 0
             term_3 = 0
@@ -383,16 +384,16 @@ class TrajectoryNode:#{{{
 
             candidate_psd_list = c_rho_list.copy()
             for idx in sorted_index[i:]:
-                candidate_psd_list[idx] = 1/(user.total_data*lambda_psd)-1/pl_over_noise_list[idx]
+                candidate_psd_list[idx] = 1/(user_list[idx].total_data*lambda_psd)-1/pl_over_noise_list[idx]
 
             # If this lambda_psd is valid
-            if (i>=1 and lambda_list[i-1] <= lambda_psd <= lambda_list[i]) or \
+            if (0<i<len(user_list) and lambda_list[i-1] <= lambda_psd <= lambda_list[i]) or \
                     (i==0 and 0 <= lambda_psd <= lambda_list[i]) or \
                     (i==len(user_list)-1 and lambda_list[i] < lambda_psd) :
-#                print("candidate_psd_list:", candidate_psd_list)
                 value = self.objective_function(candidate_psd_list, user_list)
                 if max_objective_value < value:
                     max_psd_list = candidate_psd_list
+                    max_objective_value = value
 
         for user, psd in zip(user_list, max_psd_list):
             user.psd = psd
@@ -405,7 +406,8 @@ class TrajectoryNode:#{{{
 #        print("psd :", candidate_psd_list)
 #        print("c_rho :", c_rho_list)
 #        print("diff:", [candidate_psd_list[a]-user.psd for a,user in enumerate(user_list)])
-#        print(sum([user.ra*candidate_psd_list[idx] for idx,user in enumerate(user_list)]))
+#        print("candidate_psd_list:", candidate_psd_list)
+#        print(f'sum: {sum([user.ra*candidate_psd_list[idx] for idx,user in enumerate(user_list)]):04f}')
 #        print('----')
         
         return max_psd_list#}}}
