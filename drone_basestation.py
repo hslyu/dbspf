@@ -201,11 +201,11 @@ class TrajectoryNode:#{{{
             count=0
             while True:
                 count += 1
+#                print(count)
                 psd = self.kkt_psd(candidate_valid_user_list) # return psd
                 ra = self.kkt_ra(candidate_valid_user_list) # return ra
                 candidate_reward = self.objective_function(psd, candidate_valid_user_list)
-                if abs(prev_candidate_reward-candidate_reward) < THRESHOLD or\
-                    count > 10:
+                if abs(prev_candidate_reward-candidate_reward) < 1e-3 or count >= 5:
                     break;
                 prev_candidate_reward = candidate_reward
 
@@ -277,12 +277,11 @@ class TrajectoryNode:#{{{
 
         # Initialize arguments of the dual function
         lambda_1 = .5
-        lambda_2 = .5
-        mu_list=[.1]*len(user_list)
+        lambda_2 = .8
+        mu_list=[0]*len(user_list)
         weight_list = [0]*(2+len(mu_list))
 
-        import time
-        start = time.time()
+#        start = time.time()
         count=0
         while True:
             count+=1
@@ -296,8 +295,6 @@ class TrajectoryNode:#{{{
             weight_list = [weight + grad_list[i]**2 for i, weight in enumerate(weight_list)]
             lambda_1 = max(0, lambda_1 - STEP_SIZE/(weight_list[0]+EPSILON)**.5*grad_list[0])
             lambda_2 = max(0, lambda_2 - STEP_SIZE/(weight_list[1]+EPSILON)**.5*grad_list[1])
-#            mu_list = [ min(lambda_1+user_list[idx].psd*lambda_2 - 0.001, \
-#                    max(0, mu - 10*STEP_SIZE/(weight_list[2+idx]+EPSILON)**.5*grad_list[2+idx]) for idx, mu in enumerate(mu_list)]
             mu_list = [ min(lambda_1+user_list[idx].psd*lambda_2 - .1, \
                     max(0, mu - 1.3*STEP_SIZE/(weight_list[2+idx]+EPSILON)**.5*grad_list[2+idx])) for idx, mu in enumerate(mu_list)]
 
@@ -305,17 +302,17 @@ class TrajectoryNode:#{{{
 #            if count%2000==0 :
 #                print("Gradient:", grad_list)
 #                print("Changes:",[lambda_1-prev_lambda_1, lambda_2-prev_lambda_2]+[b-a for a,b in zip(prev_mu_list, mu_list)])
-#                print("Input:", [lambda_1, 1e-5*lambda_2]+mu_list )
+#                print("Input:", [lambda_1, lambda_2]+mu_list )
 #                print("Count:",count)
 #                print("-------------------------")
-#
+
             # Stop condition
             gap = regularized_dual_function(prev_lambda_1, prev_lambda_2, prev_mu_list, user_list) \
                    - regularized_dual_function(lambda_1, lambda_2, mu_list, user_list)
-            if gap < THRESHOLD:
+            if gap < THRESHOLD or count > 1000:
 #                print("Gradient:", grad_list)
 #                print("Changes:",[lambda_1-prev_lambda_1, lambda_2-prev_lambda_2]+[b-a for a,b in zip(prev_mu_list, mu_list)])
-#                print("Input:", [lambda_1, 1e-5*lambda_2]+mu_list )
+#                print("Input:", [lambda_1, lambda_2]+mu_list )
 #                print("Count:",count)
 #                print("-------------------------")
                 break;
@@ -326,7 +323,8 @@ class TrajectoryNode:#{{{
 #        print("Final values:", [lambda_1, lambda_2]+mu_list )
 #        print("Count:", count)
 #        print("Time:", time.time()-start)
-#        print("Origianl resource list, sum:", f'{sum(resource_list):.2f}', resource_list)
+#        if abs(sum(resource_list)-1) > .1:
+#            print("Origianl resource list, sum:", f'{sum(resource_list):.2f}', resource_list)
 #        sum_resource = sum(resource_list)
 #        resource_list = [resource + (BANDWIDTH-sum_resource)/len(resource_list) for resource in resource_list]
 #        resource_list = [BANDWIDTH*resource/sum_resource for resource in resource_list]
@@ -353,13 +351,16 @@ class TrajectoryNode:#{{{
         pl_over_noise_list = []
         c_rho_list = []
         for idx, user in enumerate(user_list):
-            pl_over_noise = 10**((user.pathloss-NOISE_DENSITY)/10.)
+            pl_over_noise = 10**((-user.pathloss-NOISE_DENSITY)/10.)
             pl_over_noise_list.append(pl_over_noise)
             # user.ra = unit of 20MHz = 20 * unit of MHz
             c_rho_list.append((pow(2,user.datarate/(user.ra*20))-1)/pl_over_noise)
             lambda_list.append(pl_over_noise/pow(2,user.datarate/(user.ra*20))/user.total_data)
         # return the sorted index list of the user lambda_list
         sorted_index = sorted(range(len(user_list)), key=lambda k: lambda_list[k])
+#        print(c_rho_list)
+#        print(c_rho_list)
+#        print(pl_over_noise)
 
         max_objective_value = -99999
         max_psd_list = []
@@ -390,6 +391,7 @@ class TrajectoryNode:#{{{
             if (0<i<len(user_list) and lambda_list[i-1] <= lambda_psd <= lambda_list[i]) or \
                     (i==0 and 0 <= lambda_psd <= lambda_list[i]) or \
                     (i==len(user_list)-1 and lambda_list[i] < lambda_psd) :
+#                print(candidate_psd_list)
                 value = self.objective_function(candidate_psd_list, user_list)
                 if max_objective_value < value:
                     max_psd_list = candidate_psd_list
@@ -554,8 +556,7 @@ class TrajectoryTree:#{{{
             self.root = self.DFS(self.root)[0][-2]
             self.recursive_find_leaf([self.root], 1) 
             self.root.elapsed_time = time.time()-start
-#            print("current time:", i)
-#            print("1 Unit recursive tree elapsed time:", self.root.elapsed_time)
+            print(f'current step: {i}, reward: {self.root.reward:.2f}, elapsed time: {self.root.elapsed_time:.2f}', end='\r', flush=True)
 #            self.root.get_info()
         return path
         #}}}#}}}
@@ -577,7 +578,7 @@ if __name__ =="__main__":
     # Constant for user
     NUM_UE = 40
     TIME_WINDOW_SIZE = [3,5]
-    TIME_PERIOD_SIZE = [50,70]
+    TIME_PERIOD_SIZE = [100, 150]
     DATARATE_WINDOW = [35, 60] # Requiring datarate Mb/s
     INITIAL_DATA = 10 # Mb
     TREE_DEPTH = 1
