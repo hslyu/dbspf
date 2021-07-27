@@ -8,13 +8,13 @@ import os
 import json
 
 def create_dir(dir_path):
-    try:#{{{
+    try:
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
-        else:
-            print(f'Directory already exists: at {dir_path}')
+#        else:
+#            print(f'Directory already exists: at {dir_path}')
     except OSError:
-        print('Fail to create diretory: ' +  dir_path)#}}}
+        print('Fail to create diretory: ' +  dir_path)
 
 def open_json(file_path):
     with open(file_path, encoding='utf-8') as f:
