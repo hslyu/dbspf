@@ -556,7 +556,7 @@ class TrajectoryTree:#{{{
             self.root.elapsed_time = time.time()-start
             print("current time:", i)
             print("1 Unit recursive tree elapsed time:", self.root.elapsed_time)
-            self.root.get_info()
+#            self.root.get_info()
         return path
         #}}}#}}}
 
