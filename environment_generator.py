@@ -26,13 +26,13 @@ GRID_SIZE = 10 # meter
 NUM_UE = 200
 TIME_WINDOW_SIZE = [3,7]
 TIME_PERIOD_SIZE = [30,50]
-DATARATE_WINDOW = [35, 60] # Requiring datarate Mb/s
+DATARATE_WINDOW = [35,60] # Requiring datarate Mb/s
 INITIAL_DATA = 10 # Mb
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Generate consistent random position',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--directory', default=DIRECTORY_PATH, type=str, help='Directory to save the environment')
+    parser.add_argument('--output_dir', default=DIRECTORY_PATH, type=str, help='Directory to save the environment')
     parser.add_argument('--num_iteration', default=NUM_ITERATION, type=int, help='Total number of iteration')
     parser.add_argument('--vehicle_velocity', default=VEHICLE_VELOCITY, type=float, help='Drone maximum velocity')
     parser.add_argument('--time_step', default=TIME_STEP, type=int, help='Time unit for trajectory planning')
@@ -42,19 +42,22 @@ def get_parser():
     parser.add_argument('--max_altitude', default=MAX_ALTITUDE, type=int, help='Maximum altitude')
     parser.add_argument('--grid_size', default=GRID_SIZE, type=float, help='Unit length of descritized map')
     parser.add_argument('--num_ue', default=NUM_UE, type=int, help='Number of user')
-    parser.add_argument('--time_window_size', default=TIME_WINDOW_SIZE, nargs='+', help='Time window size')
-    parser.add_argument('--time_period_size', default=TIME_PERIOD_SIZE, nargs='+', help='Time period size')
-    parser.add_argument('--datarate_window', default=DATARATE_WINDOW, nargs='+', help='Datarate window')
+    parser.add_argument('--time_window_size', default=TIME_WINDOW_SIZE, type=int, nargs='+', help='Time window size')
+    parser.add_argument('--time_period_size', default=TIME_PERIOD_SIZE, type=int, nargs='+', help='Time period size')
+    parser.add_argument('--datarate_window', default=DATARATE_WINDOW, type=int, nargs='+', help='Datarate window')
     parser.add_argument('--initial_data', default=INITIAL_DATA, type=float, help='Initial data')
+    parser.add_argument('--args_filename', default='args.json', type=str, help='Name of argument json file')
+    parser.add_argument('--generate_args_only', default=False, type=bool, help='Generate just arguments if true. Otherwise, the scripts generates a number of environments')
 
     return parser
 
 def environment_generator(parser):
     args = parser.parse_args()
-    create_dir(os.path.join(args.directory, 'env'))
-
-    with open(os.path.join(args.directory,'args.json'), 'w') as f:
+    create_dir(os.path.join(args.output_dir, 'env'))
+    with open(os.path.join(args.output_dir, args.args_filename), 'w') as f:
         json.dump(args.__dict__, f, ensure_ascii=False, indent=4)
+    if args.generate_args_only:
+        return
 
     for i in range(args.num_iteration):
         env_dict = {}
@@ -81,7 +84,7 @@ def environment_generator(parser):
             user_list.append(user_data)
         env_dict['user_list'] = user_list
 
-        with open(os.path.join(args.directory, f'env/env_{i:04d}.json'), 'w') as f:
+        with open(os.path.join(args.output_dir, f'env/env_{i:04d}.json'), 'w') as f:
             json.dump(env_dict, f, ensure_ascii=False, indent=4)
 
 if __name__ =='__main__':
