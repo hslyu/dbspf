@@ -16,13 +16,15 @@ def get_parser():
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-t', '--tree_depth', type=int, help='Tree depth')
     parser.add_argument('--env_path', default=os.path.join(os.getcwd(), 'data'), type=str, help='Path of the environment directory')
+    parser.add_argument('--env_args_filename', default='args.json', type=str, help='Filename of the environment argument json file')
     parser.add_argument('--result_path', default=os.path.join(os.getcwd(), 'result'), type=str, help='Path of the result directory')
     parser.add_argument('--num_user', type=int, help='Path of the environment directory')
     parser.add_argument('--index_start', default=0, type=int, help='Iteration start index')
     parser.add_argument('--index_end', type=int, help='Iteration end index')
+    parser.add_argument('--datarate_experiment', type=bool, default=False, help='Option for datarate effect simulation')
     return parser
 
-def load_root(path, num_user, args, env_index):
+def load_root(path, num_user, env_index):
     with open(os.path.join(path,f'env/env_{env_index:04d}.json')) as f:
         env = json.load(f)
         if env['num_iteration'] != env_index:
@@ -77,7 +79,7 @@ if __name__ =="__main__":
         parser.error("Number of user should be specified.")
 
     # Load environment
-    env_args_dict = open_json(os.path.join(main_args.env_path, 'args.json'))
+    env_args_dict = open_json(os.path.join(main_args.env_path, main_args.env_args_filename))
 
     env_args = type('Arguments', (object,), env_args_dict)
     # Create directory to store the result
@@ -85,7 +87,10 @@ if __name__ =="__main__":
     
     # Load root node and start trajectory plannnig
     for env_index in range(main_args.index_start, main_args.index_end):
-        root = load_root(main_args.env_path, main_args.num_user, env_args, env_index)
+        root = load_root(main_args.env_path, main_args.num_user, env_index)
+        if main_args.datarate_experiment:
+            for user in root.user_list:
+                user.datarate = env_args.datarate_window[0]
         tree = dbs.TrajectoryTree(root, env_args.vehicle_velocity,
                                 env_args.time_step, env_args.grid_size,
                                 env_args.map_width, env_args.min_altitude, env_args.max_altitude,
