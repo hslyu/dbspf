@@ -101,6 +101,5 @@ if __name__ =="__main__":
         for node in dbs_trajectory:
             total_reward += node.reward
             total_time += node.elapsed_time
-        save_result(f'depth_{main_args.tree_depth}-ue_{main_args.num_user}', main_args.result_path, env_args_dict, main_args, env_index, total_reward, total_time, dbs_trajectory)
+        save_result(f'depth_{main_args.tree_depth}-ue_{main_args.num_user}.json', main_args.result_path, env_args_dict, main_args, env_index, total_reward, total_time, dbs_trajectory)
         print(f'[{env_index-main_args.index_start+1}/{main_args.index_end-main_args.index_start}] Total reward: {total_reward:.2f}, Total time: {total_time}')
-
