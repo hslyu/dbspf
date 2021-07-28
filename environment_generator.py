@@ -25,7 +25,7 @@ GRID_SIZE = 10 # meter
 # Constant for user
 NUM_UE = 200
 TIME_WINDOW_SIZE = [3,7]
-TIME_PERIOD_SIZE = [30,50]
+TIME_PERIOD_SIZE = [90, 130]
 DATARATE_WINDOW = [35,60] # Requiring datarate Mb/s
 INITIAL_DATA = 10 # Mb
 
