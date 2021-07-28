@@ -350,7 +350,7 @@ class TrajectoryNode:#{{{
         # 10^(-\xi/10)/n_0
         pl_over_noise_list = []
         c_rho_list = []
-        for idx, user in enumerate(user_list):
+        for user in user_list:
             pl_over_noise = 10**((-user.pathloss-NOISE_DENSITY)/10.)
             pl_over_noise_list.append(pl_over_noise)
             # user.ra = unit of 20MHz = 20 * unit of MHz
@@ -359,8 +359,6 @@ class TrajectoryNode:#{{{
         # return the sorted index list of the user lambda_list
         sorted_index = sorted(range(len(user_list)), key=lambda k: lambda_list[k])
 #        print(c_rho_list)
-#        print(c_rho_list)
-#        print(pl_over_noise)
 
         max_objective_value = -99999
         max_psd_list = []
@@ -383,15 +381,21 @@ class TrajectoryNode:#{{{
 #            print("lambda psd:", lambda_psd)
 #            print("lambda list:", lambda_list)
 
-            candidate_psd_list = c_rho_list.copy()
+            candidate_psd_list = c_rho_list[:]
             for idx in sorted_index[i:]:
                 candidate_psd_list[idx] = 1/(user_list[idx].total_data*lambda_psd)-1/pl_over_noise_list[idx]
 
             # If this lambda_psd is valid
-            if (0<i<len(user_list) and lambda_list[i-1] <= lambda_psd <= lambda_list[i]) or \
-                    (i==0 and 0 <= lambda_psd <= lambda_list[i]) or \
-                    (i==len(user_list)-1 and lambda_list[i] < lambda_psd) :
-#                print(candidate_psd_list)
+            sorted_lambda_list = [lambda_list[idx] for idx in sorted_index]
+#            print("slambda", sorted_lambda_list)
+#            print("comparison", sorted_lambda_list[i:], lambda_psd, sorted_lambda_list[:i])
+            if all(lambda_i >= lambda_psd for lambda_i in sorted_lambda_list[i:]) and\
+                    all(lambda_i < lambda_psd for lambda_i in sorted_lambda_list[:i]):
+                if not all( diff>=0 for diff in [b-a for a,b in zip(c_rho_list, candidate_psd_list)]):
+                    print(lambda_psd, lambda_list[i])
+                    print("pl over noise list", pl_over_noise_list)
+                    print("c rho list", c_rho_list)
+                    print(candidate_psd_list, i)
                 value = self.objective_function(candidate_psd_list, user_list)
                 if max_objective_value < value:
                     max_psd_list = candidate_psd_list
@@ -576,7 +580,7 @@ if __name__ =="__main__":
     MAX_ALTITUDE = 100 # meter
     GRID_SIZE = 10 # meter
     # Constant for user
-    NUM_UE = 40
+    NUM_UE = 80
     TIME_WINDOW_SIZE = [3,5]
     TIME_PERIOD_SIZE = [100, 150]
     DATARATE_WINDOW = [35, 60] # Requiring datarate Mb/s
