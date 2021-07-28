@@ -4,7 +4,7 @@ python environment_generator.py\
 	--output_dir data_required_datarate\
 	--num_iteration 1000\
 	--datarate 5 5\
-	--args_filename args_datarate-10.json
+	--args_filename args_datarate-5.json
 #
 for i in {1..20}
 do
