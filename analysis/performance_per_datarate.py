@@ -16,10 +16,9 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
 from utils import open_json
 
+dir_path = 'some-value_per_datarate/'
 
-dir_path = 'some-value_per_depth/'
-
-def plot_per_ue(depth,dir_path):#{{{
+def plot_per_datarate(depth,dir_path):#{{{
     with open(dir_path+'time_per_depth.pkl', 'rb') as f:
         time_per_depth = pickle.load(f)
     with open(dir_path+'reward_per_depth.pkl', 'rb') as f:
@@ -75,19 +74,17 @@ def plot_per_ue(depth,dir_path):#{{{
 
 if __name__=="__main__":
     # Load data
-    num_env = 20
+    num_env = 100
     max_time = 200
-    depth = 5
     master_dir = os.path.join(os.getcwd(),'result')
-    num_user_list = list(range(10,56,5))
-
+    datarate_list = list(range(5,101,5))
 
     '''
     time_per_depth = []#{{{
     reward_per_depth = []
     avg_data_per_depth = []
     var_data_per_depth = []
-    for depth in range(1,6):
+    for datarate in range(5,101,5):
         avg_time = []
         avg_reward = []
         avg_data = []
@@ -129,4 +126,4 @@ if __name__=="__main__":
     with open('analysis/var_data_per_depth.pkl', 'wb') as f:
         pickle.dump(var_data_per_depth, f)#}}}
     '''
-    plot_per_ue(depth, dir_path)
+    plot_per_datarate(depth, dir_path)
