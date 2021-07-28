@@ -10,7 +10,7 @@ import pickle
 import matplotlib.pyplot as plt
 from open_json import open_json
 
-dir_path = 'analysis/some-value_per_depth/'
+dir_path = 'some-value_per_depth/'
 
 def plot_time_reward_per_ue(depth,dir_path):#{{{
     with open(dir_path+'time_per_depth.pkl', 'rb') as f:
