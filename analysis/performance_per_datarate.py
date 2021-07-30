@@ -29,57 +29,7 @@ def open_json(file_path):
         var_data = total_data_square/len(user_list)
         return time, reward, avg_data, var_data
 
-def plot_per_datarate(pkl_dir_path, datarate_list):
-    with open(pkl_dir_path+'avg_time_per_step_per_datarate.pkl', 'rb') as f:
-        avg_time_per_step_per_datarate = pickle.load(f)
-    with open(pkl_dir_path+'avg_reward_per_step_per_datarate.pkl', 'rb') as f:
-        avg_reward_per_step_per_datarate = pickle.load(f)
-    with open(pkl_dir_path+'avg_data_per_datarate.pkl', 'rb') as f:
-        avg_data_per_datarate = pickle.load(f)
-    with open(pkl_dir_path+'var_data_per_datarate.pkl', 'rb') as f:
-        var_data_per_datarate = pickle.load(f)
-
-    plot1 = plt.figure(1)
-    plt.plot(datarate_list, avg_time_per_step_per_datarate)
-    plt.xlabel("Datarate")
-    plt.ylabel("Average time per step")
-    
-    plot2 = plt.figure(2)
-    plt.plot(datarate_list, avg_reward_per_step_per_datarate)
-    plt.xlabel("Datarate")
-    plt.ylabel("Reward per step")
-
-    plot3 = plt.figure(3)
-    plt.plot(datarate_list, 
-            [reward /time for reward, time in zip(avg_reward_per_step_per_datarate, avg_time_per_step_per_datarate)])
-    plt.xlabel("Datarate")
-    plt.ylabel("Avg. reward/Avg. time")
-
-    plot4 = plt.figure(4)
-    plt.plot(datarate_list, avg_data_per_datarate)
-    plt.xlabel("Datarate")
-    plt.ylabel("Average of user received data")
-
-    plot5 = plt.figure(5)
-    plt.plot(datarate_list, var_data_per_datarate)
-    plt.xlabel("Datarate")
-    plt.ylabel("Variance of user received data")
-    plt.show()
-    
-
-if __name__=="__main__":
-    # Load data
-    num_env = 100
-    max_time = 200
-    depth = 2
-    num_ue = 40
-    datarate_list = list(range(5,101,5))
-    # Input and output directory path
-    result_dir = os.path.join(os.getcwd(),'../result_datarate')
-    pkl_dir_path = 'some-value_per_datarate/'
-
-    '''
-    #{{{
+def parse_result(num_env, max_time, depth, num_ue, datarate_list, result_dir, pkl_dir_path)#{{{
     avg_time_per_step_per_datarate = []
     avg_reward_per_step_per_datarate = []
     avg_data_per_datarate = []
@@ -123,7 +73,56 @@ if __name__=="__main__":
     with open(pkl_dir_path+'avg_data_per_datarate.pkl', 'wb') as f:
         pickle.dump(avg_data_per_datarate, f)
     with open(pkl_dir_path+'var_data_per_datarate.pkl', 'wb') as f:
-        pickle.dump(var_data_per_datarate, f)
-    #}}}
-    '''
+        pickle.dump(var_data_per_datarate, f)#}}}
+
+def plot_per_datarate(pkl_dir_path, datarate_list):#{{{
+    with open(pkl_dir_path+'avg_time_per_step_per_datarate.pkl', 'rb') as f:
+        avg_time_per_step_per_datarate = pickle.load(f)
+    with open(pkl_dir_path+'avg_reward_per_step_per_datarate.pkl', 'rb') as f:
+        avg_reward_per_step_per_datarate = pickle.load(f)
+    with open(pkl_dir_path+'avg_data_per_datarate.pkl', 'rb') as f:
+        avg_data_per_datarate = pickle.load(f)
+    with open(pkl_dir_path+'var_data_per_datarate.pkl', 'rb') as f:
+        var_data_per_datarate = pickle.load(f)
+
+    plot1 = plt.figure(1)
+    plt.plot(datarate_list, avg_time_per_step_per_datarate)
+    plt.xlabel("Datarate")
+    plt.ylabel("Average time per step")
+    
+    plot2 = plt.figure(2)
+    plt.plot(datarate_list, avg_reward_per_step_per_datarate)
+    plt.xlabel("Datarate")
+    plt.ylabel("Reward per step")
+
+    plot3 = plt.figure(3)
+    plt.plot(datarate_list, 
+            [reward /time for reward, time in zip(avg_reward_per_step_per_datarate, avg_time_per_step_per_datarate)])
+    plt.xlabel("Datarate")
+    plt.ylabel("Avg. reward/Avg. time")
+
+    plot4 = plt.figure(4)
+    plt.plot(datarate_list, avg_data_per_datarate)
+    plt.xlabel("Datarate")
+    plt.ylabel("Average of user received data")
+
+    plot5 = plt.figure(5)
+    plt.plot(datarate_list, var_data_per_datarate)
+    plt.xlabel("Datarate")
+    plt.ylabel("Variance of user received data")
+    plt.show()#}}}
+    
+if __name__=="__main__":
+    # Load data
+    num_env = 100
+    max_time = 200
+    depth = 2
+    num_ue = 40
+    datarate_list = list(range(5,101,5))
+    # Input and output directory path
+    result_dir = os.path.join(os.getcwd(),'../result_datarate')
+    pkl_dir_path = 'some-value_per_datarate/'
+
+    # Executions
+    parse_result(num_env, max_time, depth, num_ue, datarate_list, result_dir, pkl_dir_path)
     plot_per_datarate(pkl_dir_path, datarate_list)
