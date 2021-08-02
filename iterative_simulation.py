@@ -42,7 +42,7 @@ def load_root(path, num_user, env_index):
 
     return root
 
-def save_result(file_name, result_dir, env_args, main_args, env_index, total_reward, total_time, trajectory):
+def save_result(filename, result_dir, env_args, main_args, env_index, total_reward, total_time, trajectory):
     result = {}
     result['environment_name'] = os.path.join(f'../data/env/env_{env_index:04d}.json')
     result['env_args'] = env_args
@@ -64,7 +64,7 @@ def save_result(file_name, result_dir, env_args, main_args, env_index, total_rew
         node_list.append(node_dict)
 
     result['trajectory'] = node_list
-    with open(os.path.join(result_dir, f'env_{env_index:04d}-'+file_name), 'w') as f:
+    with open(os.path.join(result_dir, filename), 'w') as f:
         json.dump(result, f, ensure_ascii=False, indent=4)
 
 if __name__ =="__main__":
@@ -101,5 +101,5 @@ if __name__ =="__main__":
         for node in dbs_trajectory:
             total_reward += node.reward
             total_time += node.elapsed_time
-        save_result(f'depth_{main_args.tree_depth}-ue_{main_args.num_user}.json', main_args.result_path, env_args_dict, main_args, env_index, total_reward, total_time, dbs_trajectory)
+        save_result(f'env_{env_index:04d}-depth_{main_args.tree_depth}-ue_{main_args.num_user}.json', main_args.result_path, env_args_dict, main_args, env_index, total_reward, total_time, dbs_trajectory)
         print(f'[{env_index-main_args.index_start+1}/{main_args.index_end-main_args.index_start}] Total reward: {total_reward:.2f}, Total time: {total_time}')
