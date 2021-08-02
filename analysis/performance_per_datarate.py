@@ -29,7 +29,7 @@ def open_json(file_path):
         var_data = total_data_square/len(user_list)
         return time, reward, avg_data, var_data
 
-def parse_result(num_env, max_time, depth, num_ue, datarate_list, result_dir, pkl_dir_path)#{{{
+def parse_result(num_env, max_time, depth, num_ue, datarate_list, result_dir, pkl_dir_path):#{{{
     avg_time_per_step_per_datarate = []
     avg_reward_per_step_per_datarate = []
     avg_data_per_datarate = []
@@ -124,5 +124,5 @@ if __name__=="__main__":
     pkl_dir_path = 'some-value_per_datarate/'
 
     # Executions
-    parse_result(num_env, max_time, depth, num_ue, datarate_list, result_dir, pkl_dir_path)
+#    parse_result(num_env, max_time, depth, num_ue, datarate_list, result_dir, pkl_dir_path)
     plot_per_datarate(pkl_dir_path, datarate_list)
