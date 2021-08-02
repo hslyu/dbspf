@@ -91,6 +91,9 @@ if __name__ =="__main__":
         if main_args.datarate_experiment:
             for user in root.user_list:
                 user.datarate = env_args.datarate_window[0]
+                user.max_data = 50
+#                user.max_data = 100
+#                user.max_data = 150
         tree = dbs.TrajectoryTree(root, env_args.vehicle_velocity,
                                 env_args.time_step, env_args.grid_size,
                                 env_args.map_width, env_args.min_altitude, env_args.max_altitude,
