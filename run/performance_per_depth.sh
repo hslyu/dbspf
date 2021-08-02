@@ -18,9 +18,18 @@ fi
 
 for i in {2..11}
 do
-	num_user=$(($i * 5))
-	result_dir="./result/result-depth_$DEPTH-user_$num_user"
-	python iterative_simulation.py -t $DEPTH --num_user $num_user --result_path $result_dir --index_start $INDEX_START --index_end $INDEX_END
-	echo "Computation for depth $DEPTH and user $num_user is done."
+	NUM_USER=$(($i * 5))
+	RESULT_DIR="$HOME/dbspf/result/result-depth_$DEPTH-user_$NUM_USER/"
+    for ENV_INDEX in $(seq $INDEX_START $((INDEX_END-1)))
+    do
+        FILENAME="env_$(printf "%04d" $ENV_INDEX)-depth_$DEPTH-ue_$NUM_USER.json"
+        FILE_PATH=$RESULT_DIR$FILENAME
+        if [ ! -f $FILE_PATH ];
+        then
+            echo "File does not exist : $FILE_PATH"
+            python iterative_simulation.py -t $DEPTH --num_user $NUM_USER --result_path $RESULT_DIR --index_start $ENV_INDEX --index_end $((ENV_INDEX+1))
+        fi
+    done
+	echo "Computation for depth $DEPTH and user $NUM_USER is done."
 	echo "----------------------------------------------------"
 done
