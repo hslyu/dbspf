@@ -59,7 +59,7 @@ def plot_per_ue(dir_path, num_user_list, depth):#{{{
                 avg_data_per_depth[idx],
                 label = f'depth{idx+1}')
     plt.xlabel("Number of user")
-    plt.ylabel("Average of the user received data")
+    plt.ylabel("Average of the user received data (Mb)")
     plt.legend()
 
     plot5 = plt.figure(5)
@@ -68,7 +68,7 @@ def plot_per_ue(dir_path, num_user_list, depth):#{{{
                 var_data_per_depth[idx],
                 label = f'depth{idx+1}')
     plt.xlabel("Number of user")
-    plt.ylabel("Variance of the user received data")
+    plt.ylabel("Variance of the user received data (Mb)")
     plt.legend()
 
     plot5 = plt.figure(6)
@@ -143,8 +143,7 @@ def parse_result(num_env, max_time, max_depth, num_user_list, result_dir, pkl_di
             var_data_per_ue.append(var_data)
             avg_tput_per_ue.append(avg_tput)
             var_tput_per_ue.append(var_tput)
-            print(f'Step : [{depth}, {num_ue}],  Time : {avg_time_per_step:.6f},  Reward : {avg_reward_per_step:.2f}', 
-                    end='\r', flush=True)
+            print(f'Step : [{depth}, {num_ue}], Time : {avg_time_per_step:.6f},  Reward : {avg_reward_per_step:.2f}', end='\r', flush=True)
         print('')
         time_per_depth.append(avg_time_per_ue)
         reward_per_depth.append(avg_reward_per_ue)
@@ -170,7 +169,7 @@ def parse_result(num_env, max_time, max_depth, num_user_list, result_dir, pkl_di
 
 if __name__=="__main__":
     # Load data
-    num_env = 20
+    num_env = 1000
     max_time = 200
     max_depth = 4
     num_user_list = list(range(10,56,5))
@@ -178,5 +177,5 @@ if __name__=="__main__":
     pkl_dir_path = 'some-value_per_depth/'
 
     # exexcutions
-    parse_result(num_env, max_time, max_depth, num_user_list, result_dir, pkl_dir_path)
+    #parse_result(num_env, max_time, max_depth, num_user_list, result_dir, pkl_dir_path)
     plot_per_ue(pkl_dir_path, num_user_list, max_depth)
