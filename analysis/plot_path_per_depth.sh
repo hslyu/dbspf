@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #./plot_3d_path.py -f ../result_datarate/datarate_$2/env_$1-depth_2-ue_40.json
 
  for i in {1..4}
