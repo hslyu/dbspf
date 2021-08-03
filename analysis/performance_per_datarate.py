@@ -29,7 +29,7 @@ def open_json(file_path):
         var_data = total_data_square/len(user_list)
         return time, reward, avg_data, var_data
 
-def parse_result(num_env, max_time, depth, num_ue, datarate_list, result_dir, pkl_dir_path):#{{{
+def parse_result(num_env, max_time, depth, num_ue, datarate_list, result_dir, pkl_dir_path):
     avg_time_per_step_per_datarate = []
     avg_reward_per_step_per_datarate = []
     avg_data_per_datarate = []
@@ -73,9 +73,9 @@ def parse_result(num_env, max_time, depth, num_ue, datarate_list, result_dir, pk
     with open(pkl_dir_path+'avg_data_per_datarate.pkl', 'wb') as f:
         pickle.dump(avg_data_per_datarate, f)
     with open(pkl_dir_path+'var_data_per_datarate.pkl', 'wb') as f:
-        pickle.dump(var_data_per_datarate, f)#}}}
+        pickle.dump(var_data_per_datarate, f)
 
-def plot_per_datarate(pkl_dir_path, datarate_list):#{{{
+def plot_per_datarate(pkl_dir_path, datarate_list):
     with open(pkl_dir_path+'avg_time_per_step_per_datarate.pkl', 'rb') as f:
         avg_time_per_step_per_datarate = pickle.load(f)
     with open(pkl_dir_path+'avg_reward_per_step_per_datarate.pkl', 'rb') as f:
@@ -110,7 +110,7 @@ def plot_per_datarate(pkl_dir_path, datarate_list):#{{{
     plt.plot(datarate_list, var_data_per_datarate)
     plt.xlabel("Datarate")
     plt.ylabel("Variance of user received data")
-    plt.show()#}}}
+    plt.show()
     
 if __name__=="__main__":
     # Load data
