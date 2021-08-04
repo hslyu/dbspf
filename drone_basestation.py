@@ -562,14 +562,85 @@ class TrajectoryTree:#{{{
             self.root.elapsed_time = time.time()-start
             print(f'current step: {i}, reward: {self.root.reward:.2f}, elapsed time: {self.root.elapsed_time:.2f}', end='\r', flush=True)
 #            self.root.get_info()
+        print('')
         return path
         #}}}#}}}
+
+def circular_path(radius, max_time, initial_node=None):
+    path = []
+    if initial_node == None:
+        position = [100-radius, 100, 75]
+        # Initial grid position of UAV
+        node = TrajectoryNode(position)
+        # Make user list
+        user_list = []
+        for i in range(NUM_UE):
+            tw_size = random.randint(TIME_WINDOW_SIZE[0], TIME_WINDOW_SIZE[1])
+            time_period = random.randint(TIME_PERIOD_SIZE[0], TIME_PERIOD_SIZE[1])
+            datarate = random.randint(DATARATE_WINDOW[0], DATARATE_WINDOW[1])
+            user = User(i, # id
+                    [random.randint(0, MAP_WIDTH), random.randint(0, MAP_WIDTH)], # position
+                    random.randint(0, time_period-tw_size), tw_size, time_period, # time window
+                    datarate, INITIAL_DATA, 4*datarate) # data
+            user_list.append(user)
+    else:
+        node = initial_node
+    node.user_list = user_list
+
+    path.append(node)
+
+    unit_angle = 2*math.pi/max_time
+    for time in range(1, max_time):
+        position = [100-radius*math.cos(unit_angle*time), 100-radius*math.sin(unit_angle*time), 75]
+        node = TrajectoryNode(position, parent=path[-1])
+        path.append(node)
+
+    return path
+
+def random_path(map_width, min_altitude, max_altitude, vehicle_velocity, time_step, max_time, initial_node=None):
+    path = []
+    position = [random.randint(0, MAP_WIDTH)//10*10,
+                 random.randint(0, MAP_WIDTH)//10*10,
+                 random.randint(MIN_ALTITUDE, MAX_ALTITUDE)//10*10]
+    # Initial grid position of UAV
+    node = TrajectoryNode(position)
+    # Make user list
+    user_list = []
+    for i in range(NUM_UE):
+        tw_size = random.randint(TIME_WINDOW_SIZE[0], TIME_WINDOW_SIZE[1])
+        time_period = random.randint(TIME_PERIOD_SIZE[0], TIME_PERIOD_SIZE[1])
+        datarate = random.randint(DATARATE_WINDOW[0], DATARATE_WINDOW[1])
+        user = User(i, # id
+                [random.randint(0, MAP_WIDTH), random.randint(0, MAP_WIDTH)], # position
+                random.randint(0, time_period-tw_size), tw_size, time_period, # time window
+                datarate, INITIAL_DATA, 4*datarate) # data
+        user_list.append(user)
+    node.user_list = user_list
+
+    path.append(node)
+
+    prev_node = node
+    for time in range(1, max_time):
+        # spherical coordinate random position
+        r = random.uniform(0, vehicle_velocity*time_step)
+        theta = random.uniform(0, math.pi)
+        pi = random.uniform(0, math.pi*2)
+        # Change of position from previous position
+        position = [ r*math.sin(theta)*math.cos(pi), r*math.sin(theta)*math.sin(pi), r*math.cos(theta)]
+        # Position of current node
+        position = [ a+b for a,b in zip(position, path[-1].position)]
+        # Boundary check
+        position[0] = max(0,min(map_width, position[0]))
+        position[1] = max(0,min(map_width, position[1]))
+        position[2] = max(min_altitude,min(max_altitude, position[2]))
+        node = TrajectoryNode(position, parent=path[-1])
+        path.append(node)
+
+    return path
 
 #"""
 #{{{
 if __name__ =="__main__":
-    # Number of iteration
-    NUM_ITERATION=1000
     # Constant for UAV
     VEHICLE_VELOCITY = 10. # m/s
     TIME_STEP = 1 # s
@@ -580,7 +651,7 @@ if __name__ =="__main__":
     MAX_ALTITUDE = 100 # meter
     GRID_SIZE = 10 # meter
     # Constant for user
-    NUM_UE = 80
+    NUM_UE = 40
     TIME_WINDOW_SIZE = [3,5]
     TIME_PERIOD_SIZE = [100, 150]
     DATARATE_WINDOW = [35, 60] # Requiring datarate Mb/s
@@ -594,9 +665,6 @@ if __name__ =="__main__":
     root = TrajectoryNode(position)
     # Make user list
     user_list = []
-#    def __init__(self, uid=0, position = [0, 0],
-#            time_start=0, tw_size=0, time_period=0, datarate=0,
-#            initial_data=0, max_data=0):
     for i in range(NUM_UE):
         tw_size = random.randint(TIME_WINDOW_SIZE[0], TIME_WINDOW_SIZE[1])
         time_period = random.randint(TIME_PERIOD_SIZE[0], TIME_PERIOD_SIZE[1])
@@ -617,7 +685,16 @@ if __name__ =="__main__":
     reward = 0
     for leaf in PATH:
        reward += leaf.reward
-    print(PATH)
-    print(reward)
+    print(f'DFS trajectory reward: {reward}')
+    PATH = circular_path(100, MAX_TIME)
+    reward = 0
+    for leaf in PATH:
+       reward += leaf.reward
+    print(f'Circular trajectory reward: {reward}')
+    PATH =  random_path(MAP_WIDTH, MIN_ALTITUDE, MAX_ALTITUDE, VEHICLE_VELOCITY, TIME_STEP, MAX_TIME)
+    reward = 0
+    for leaf in PATH:
+       reward += leaf.reward
+    print(f'Random trajectory reward: {reward}')
 #}}}
 #"""
