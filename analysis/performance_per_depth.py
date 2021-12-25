@@ -173,9 +173,9 @@ if __name__=="__main__":
     max_time = 200
     max_depth = 4
     num_user_list = list(range(10,56,5))
-    result_dir = os.path.join(os.getcwd(),'../result')
+    result_dir = os.path.join(os.getcwd(),'../result/result_depth/')
     pkl_dir_path = 'some-value_per_depth/'
 
-    # exexcutions
-    #parse_result(num_env, max_time, max_depth, num_user_list, result_dir, pkl_dir_path)
+    # executions
+#    parse_result(num_env, max_time, max_depth, num_user_list, result_dir, pkl_dir_path)
     plot_per_ue(pkl_dir_path, num_user_list, max_depth)

@@ -16,10 +16,10 @@ then
 fi
 
 
-for i in {2..11}
+for i in $4
 do
 	NUM_USER=$(($i * 5))
-	RESULT_DIR="$HOME/dbspf/result/result_depth/result-depth_$DEPTH-user_$NUM_USER/"
+	RESULT_DIR="$HOME/dbspf/result/result-depth_$DEPTH-user_$NUM_USER/"
     for ENV_INDEX in $(seq $INDEX_START $((INDEX_END-1)))
     do
         FILENAME="env_$(printf "%04d" $ENV_INDEX)-depth_$DEPTH-ue_$NUM_USER.json"
