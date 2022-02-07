@@ -16,7 +16,7 @@ NOISE_DENSITY = -174+50 # dBm/20MHz , noise spectral density(Johnson-Nyquist_noi
 LOS_EXCESSIVE = 1 # dB, excessive pathloss of los link
 NLOS_EXCESSIVE = 40 # dB, excessive pathloss of nlos link
 SURROUNDING_A = 9.64 # Envrionmental parameter for probablistic LOS link
-SURROUNDING_B = 0.04 # Envrionmental parameter for probablistic LOS link
+SURROUNDING_B = 0.03 # Envrionmental parameter for probablistic LOS link
 # Optimization hyperparameter
 EPSILON = 1e-9
 STEP_SIZE = 1e-1
@@ -566,6 +566,38 @@ class TrajectoryTree:#{{{
         return path
         #}}}#}}}
 
+def fixed_path(max_time, intial_node=None):
+    path = []
+    position = [random.randint(0, MAP_WIDTH)//10*10,
+                 random.randint(0, MAP_WIDTH)//10*10,
+                 random.randint(MIN_ALTITUDE, MAX_ALTITUDE)//10*10]
+#    position = [MAP_WIDTH//2,
+#                 MAP_WIDTH//2,
+#                 10]
+    # Initial grid position of UAV
+    node = TrajectoryNode(position)
+    # Make user list
+    user_list = []
+    for i in range(NUM_UE):
+        tw_size = random.randint(TIME_WINDOW_SIZE[0], TIME_WINDOW_SIZE[1])
+        time_period = random.randint(TIME_PERIOD_SIZE[0], TIME_PERIOD_SIZE[1])
+        datarate = random.randint(DATARATE_WINDOW[0], DATARATE_WINDOW[1])
+        user = User(i, # id
+                [random.randint(0, MAP_WIDTH), random.randint(0, MAP_WIDTH)], # position
+                random.randint(0, time_period-tw_size), tw_size, time_period, # time window
+                datarate, INITIAL_DATA, 4*datarate) # data
+        user_list.append(user)
+    node.user_list = user_list
+
+    path.append(node)
+
+    prev_node = node
+    for time in range(1, max_time):
+        node = TrajectoryNode(position, parent=path[-1])
+        path.append(node)
+
+    return path
+
 def circular_path(radius, max_time, initial_node=None):
     path = []
     if initial_node == None:
@@ -638,25 +670,23 @@ def random_path(map_width, min_altitude, max_altitude, vehicle_velocity, time_st
 
     return path
 
-#"""
-#{{{
 if __name__ =="__main__":
     # Constant for UAV
-    VEHICLE_VELOCITY = 10. # m/s
+    VEHICLE_VELOCITY = 20. # m/s
     TIME_STEP = 1 # s
     MAX_TIME = 200 # unit of (TIME_STEP) s
     ## Constant for map
-    MAP_WIDTH = 200 # meter, Both X and Y axis width
+    MAP_WIDTH = 400 # meter, Both X and Y axis width
     MIN_ALTITUDE = 50 # meter
     MAX_ALTITUDE = 100 # meter
-    GRID_SIZE = 10 # meter
+    GRID_SIZE = 20 # meter
     # Constant for user
-    NUM_UE = 40
+    NUM_UE = 25
     TIME_WINDOW_SIZE = [3,5]
     TIME_PERIOD_SIZE = [100, 150]
     DATARATE_WINDOW = [35, 60] # Requiring datarate Mb/s
     INITIAL_DATA = 10 # Mb
-    TREE_DEPTH = 1
+    TREE_DEPTH = 3
 
     position = [random.randint(0, MAP_WIDTH)//10*10,
                  random.randint(0, MAP_WIDTH)//10*10,
@@ -691,10 +721,13 @@ if __name__ =="__main__":
     for leaf in PATH:
        reward += leaf.reward
     print(f'Circular trajectory reward: {reward}')
-    PATH =  random_path(MAP_WIDTH, MIN_ALTITUDE, MAX_ALTITUDE, VEHICLE_VELOCITY, TIME_STEP, MAX_TIME)
+    PATH = random_path(MAP_WIDTH, MIN_ALTITUDE, MAX_ALTITUDE, VEHICLE_VELOCITY, TIME_STEP, MAX_TIME)
     reward = 0
     for leaf in PATH:
        reward += leaf.reward
     print(f'Random trajectory reward: {reward}')
-#}}}
-#"""
+    PATH = fixed_path(MAX_TIME)
+    reward = 0
+    for leaf in PATH:
+       reward += leaf.reward
+    print(f'Fixed trajectory reward: {reward}')
