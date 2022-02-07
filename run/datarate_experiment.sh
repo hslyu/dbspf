@@ -14,9 +14,9 @@ do
 	echo "Iteration for datarate $DATARATE"
 	python iterative_simulation.py\
 		--tree_depth 2\
-		--env_path $PWD/data_datarate_max_data\
+		--env_path $PWD/result/result_datarate_max_data/data_datarate_max_data_50-150\
 		--env_args_filename args_datarate-$DATARATE.json\
-		--result_path $PWD/result_datarate_max_data/datarate_$DATARATE\
+		--result_path $PWD/result/result_datarate_max_data/max_data_150/datarate_$DATARATE\
 		--num_user $NUM_USER\
 		--index_start 0\
 		--index_end 200\
