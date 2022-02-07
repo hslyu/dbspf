@@ -8,7 +8,6 @@ from typing import List
 
 import math
 import random
-import cvxpy as cp
 from scipy.stats import rice
 
 @dataclass
