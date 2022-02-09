@@ -8,6 +8,7 @@ from typing import List
 
 import math
 import random
+import numpy as np
 from scipy.stats import rice
 
 @dataclass
@@ -64,7 +65,7 @@ class Position:
     def __sub__(self, other):
         return Position(self.x-other.x, self.y-other.y, self.z-other.z)
 
-    def l2_norm(self, other=None):
+    def l2_norm(self, other = None):
         if other is None:
             return (self.x**2+self.y**2+self.z**2)**.5
         if other is not None:
@@ -73,51 +74,91 @@ class Position:
 @dataclass
 class Device:
     position: Position = Position()
-    list_subcarrier: List[Subcarrier] = None
+    list_subcarrier_UBS: List[Subcarrier] = None
+    list_subcarrier_GBS: List[Subcarrier] = None
     mode: int = 0
     alpha: list[int] = None
     los_prob: float = 0
     serviced_data: float=.1
 
 @dataclass
-class UAVBasestation:
-    prev_position: Position=Position()
-    position: Position=Position()
-    list_ue: List[Device]=None
+class GroundBasestation:
+    position: Position = Position(param.map_width/2, param.map_width/2, 10)
+    list_ue: List[Device] = None
 
-    def calc_pathloss(self, user: Device):
+    def calc_channel(self):
+        for ue in self.list_ue:
+            self._calc_channel(ue)
+
+    def _calc_channel(self, user: Device):
+        for i, subcarrier in enumerate(user.list_subcarrier_GBS):
+            subcarrier.pathloss = 10 * math.log10( self.position.l2_norm(user.position)**(param.pathloss_g2g_alpha) )
+            subcarrier.channel = random.gauss(0,1)**2 * 10**(- subcarrier.pathloss / 10)
+
+@dataclass
+class UAVBasestation:
+    prev_position: Position = Position()
+    position: Position = Position()
+    list_ue: List[Device] = None
+    list_subcarrier: List[Subcarrier] = None
+    GBS: GroundBasestation = None
+    gbs_channel: float = 0
+    gbs_los_prob: float = 0
+
+    def calc_pathloss(self):
+        for ue in self.list_ue:
+            self._calc_pathloss(ue)
+        self._calc_pathloss(self.GBS)
+
+    def calc_channel(self):
+        for ue in self.list_ue:
+            self._calc_channel(ue)
+        self._calc_channel(self.GBS)
+
+    def _calc_pathloss(self, user: Device):
         """
             Calculate pathlosses of user's subcarriers.
         """
-        cplog = lambda x: cp.log(x)/cp.log(10)
-        # Different operand required when one of members in self.position is cp.Variable
-        log = cp.log if any( [isinstance(ax[1], cp.Variable) for ax in vars(self.position).items()]) else math.log10
+#        cplog = lambda x: cp.log(x)/cp.log(10)
+#        # Different operand required when one of members in self.position is cp.Variable
+#        log = cp.log if any( [isinstance(ax[1], cp.Variable) for ax in vars(self.position).items()]) else math.log10
+        log=math.log10
 
-        for i, subcarrier in enumerate(user.list_subcarrier):
+        if isinstance(user, Device):
+            los_prob = self.los_prob(user.position)
+            user.los_prob = los_prob
+            list_subcarrier = user.list_subcarrier_UBS
+        elif isinstance(user, GroundBasestation):
+            los_prob = self.los_prob(user.position)
+            self.gbs_los_prob = los_prob
+            list_subcarrier = self.list_subcarrier
+
+        for i, subcarrier in enumerate(list_subcarrier):
             # fspl: Free space propagation loss
             fspl = 20 * log(4 * math.pi * subcarrier.frequency / param.lightspeed) \
                      + 20 * log(self.position.l2_norm(user.position))
 
 #            avg_excessive_loss = user.los_prob * param.pathloss_excessive_LoS + \
 #                                (1 - user.los_prob) * param.pathloss_excessive_NLoS
-            avg_excessive_loss = param.pathloss_excessive_NLoS + (param.pathloss_excessive_LoS - param.pathloss_excessive_NLoS) * user.los_prob
+            avg_excessive_loss = param.pathloss_excessive_NLoS + (param.pathloss_excessive_LoS - param.pathloss_excessive_NLoS) * los_prob
 
             subcarrier.pathloss = fspl + avg_excessive_loss
         return
 
-    def calc_channel(self, user: Device):
+    def _calc_channel(self, user: Device):
         """
             Calculate channels of user's subcarriers.
             Pathlosses of the subcarriers should be initialized.
         """
-        for subcarrier in user.list_subcarrier:
+        list_subcarrier = user.list_subcarrier_UBS if isinstance(user, Device) else self.list_subcarrier
+        for subcarrier in list_subcarrier:
             pathloss = 10**(subcarrier.pathloss / 10)
             subcarrier.channel = rice.rvs( 10**(param.rician_K / 10) ) / pathloss
     
     def los_prob(self, pos_other: Position):
-        if any( [isinstance(ax[1], cp.Variable) for ax in vars(self.position).items()]):
-            print("self.position must be real value, not variable.")
-            print("If you want to put cp.Variable at los_prob, please use approx_los_prob.")
+#        if any( [isinstance(ax[1], cp.Variable) for ax in vars(self.position).items()]):
+#            print("self.position must be real value, not variable.")
+#            print("If you want to put cp.Variable at los_prob, please use approx_los_prob.")
 
         a = param.pathloss_a2g_a
         b = param.pathloss_a2g_b
@@ -132,7 +173,8 @@ class UAVBasestation:
 
             return 180 / math.pi * ( math.asin(1/C) - 1 / (C * (C**2-1)**.5) * ( self.position.l2_norm(pos_other) / abs(self.position.z - pos_other.z) - C) )
 
-        exp = cp.exp if any( [isinstance(ax[1], cp.Variable) for ax in vars(self.position).items()]) else math.exp
+#        exp = cp.exp if any( [isinstance(ax[1], cp.Variable) for ax in vars(self.position).items()]) else math.exp
+        exp = math.exp
         tmp = approx_theta()
 
         a = param.pathloss_a2g_a
@@ -147,39 +189,29 @@ def initialize_users():
     # Make default subcarrier
     for _ in range(param.num_ue):
         position = Position(random.randint(0, param.map_width), random.randint(0, param.map_width), 0)
-        list_subcarrier = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
+        list_subcarrier_UBS = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
+        list_subcarrier_GBS = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
 
-        ue = Device(position, list_subcarrier, random.randint(0,1), [random.randint(0,1) for _ in range(param.num_subcarriers)])
+        ue = Device(position, list_subcarrier_UBS, list_subcarrier_GBS, random.randint(0,1), [random.randint(0,1) for _ in range(param.num_subcarriers)])
         list_ue.append(ue)
 
     return list_ue
 
-def initialize_UAV():
+def initialize_network():
     prev_position = Position(random.randint(0, param.map_width), random.randint(0, param.map_width), 50)
-    position = Position(random.randint(0, param.map_width), cp.Variable(pos=True, name='x'), 50)
-    is_variable = any( [isinstance(ax[1], cp.Variable) for ax in vars(position).items()])
+    position = Position(random.randint(0, param.map_width), random.randint(0, param.map_width), 50)
+    list_subcarrier = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
+#    position = Position(random.randint(0, param.map_width), cp.Variable(pos=True, name='x'), 49)
+#    is_variable = any( [isinstance(ax[1], cp.Variable) for ax in vars(position).items()])
 
     list_ue = initialize_users()
+    GBS = GroundBasestation(Position(param.map_width/2, param.map_width/2, 10), list_ue)
+    UBS = UAVBasestation(prev_position, position, list_ue, list_subcarrier, GBS = GBS)
+    UBS.calc_pathloss()
+    UBS.calc_channel()
+    GBS.calc_channel()
 
-    UAVBS = UAVBasestation(prev_position, position, list_ue)
-    for ue in UAVBS.list_ue:
-        # los_prob is quasiconvex
-        ue.los_prob = UAVBS.approx_los_prob(ue.position) if is_variable else UAVBS.los_prob(ue.position) 
-        UAVBS.calc_pathloss(ue)
-#        UAVBS.calc_channel(ue)
-
-    return UAVBS, list_ue
-
-def horizontal_optimization(list_user: list[Device], UAV: UAVBasestation):
-    # 0 <= x, y <= param.map_width
-    UAV.position.x = cp.Variable(pos=True, name='x')
-    UAV.position.y = cp.Variable(pos=True, name='y')
-
-    #  design eq (47)
-    #  design eq (48)
-
-    return
-
+    return UBS, GBS, list_ue
 
 if __name__=="__main__":
     
@@ -194,26 +226,50 @@ if __name__=="__main__":
         print('------')
 
     def initialization_validity_check(cvx_mode = False):
-        log = lambda x: cp.log(x) / cp.log(10) if cvx_mode else math.log10
+#        log = lambda x: cp.log(x) / cp.log(10) if cvx_mode else math.log10
+        log = math.log10
 
         print("----UAV status----")
-        print(f'{UAVBS.position = }')
-        print(f'{UAVBS.prev_position = }')
+        print(f'{UBS.position = }')
+        print(f'{UBS.prev_position = }')
+        print(f'{UBS.gbs_los_prob = }')
+        for i, subcarrier in enumerate(UBS.list_subcarrier):
+            print(f'\t\t{subcarrier.frequency = } (GHz)')
+            print(f'\t\t{subcarrier.power = } (dB)')
+            print(f'\t\t{subcarrier.pathloss = } (dB)')
+            print(f'\t\t{10*log(subcarrier.channel) = } (dB)')
+            print('\t\t----------')
+
+        print("----GBS status----")
+        print(f'{GBS.position = }')
+
         print("----User status----")
-        for user in UAVBS.list_ue: 
-            print(f'\t{user.position = }')
+        for user in list_ue: 
+            print(f'\n\t{user.position = }')
             print(f'\t{user.mode = }')
             print(f'\t{user.los_prob = }')
-            print('\t----------')
+            print('\t---------- subcarrier_UBS')
 
-            for i, subcarrier in enumerate(user.list_subcarrier):
+            for i, subcarrier in enumerate(user.list_subcarrier_UBS):
                 print(f'\t\t{user.alpha[i] = }')
                 print(f'\t\t{subcarrier.frequency = } (GHz)')
                 print(f'\t\t{subcarrier.power = } (dB)')
                 print(f'\t\t{subcarrier.pathloss = } (dB)')
-#                print(f'\t\t{10*log(subcarrier.channel) = } (dB)')
+                print(f'\t\t{10*log(subcarrier.channel) = } (dB)')
                 print('\t\t----------')
 
-    UAVBS, list_ue = initialize_UAV()
+            print('\t---------- subcarrier_GBS')
+            for i, subcarrier in enumerate(user.list_subcarrier_GBS):
+                print(f'\t\t{user.alpha[i] = }')
+                print(f'\t\t{subcarrier.frequency = } (GHz)')
+                print(f'\t\t{subcarrier.power = } (dB)')
+                print(f'\t\t{subcarrier.pathloss = } (dB)')
+                print(f'\t\t{10*log(subcarrier.channel) = } (dB)')
+                print('\t\t----------')
+
+    param.num_ue = 2
+    param.num_subcarriers = 2
+
+    UBS, GBS, list_ue = initialize_network()
 #    los_prob_approximation_test()
-    initialization_validity_check(True)
+    initialization_validity_check()

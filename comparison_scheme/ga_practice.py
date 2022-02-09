@@ -1,5 +1,10 @@
+import system_model as sm
+import math
 import numpy as np
 from geneticalgorithm import geneticalgorithm as ga
+
+def dB2Watt(var_dB: float=0):
+    return 10**(var_dB/10)
 
 def f(X):
     pen=0
@@ -9,6 +14,9 @@ def f(X):
     
 varbound=np.array([[0,10]]*3)
 
-model=ga(function=f,dimension=3,variable_type='real',variable_boundaries=varbound)
+#model=ga(function=f,dimension=3,variable_type='real',variable_boundaries=varbound)
 
-model.run()
+#model.run()
+
+UAV, list_ue = sm.initialize_UAV()
+sm.initialize_users
