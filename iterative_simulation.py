@@ -72,7 +72,7 @@ if __name__ =="__main__":
     main_args = parser.parse_args()
 
     if not bool(main_args.tree_depth):
-        parser.error("Tree depth must be specified. Usage: {} --tree-depth 3".format(__file__))
+        parser.error("Tree depth must be specified. Usage: {} --tree_depth 3".format(__file__))
     if not bool(main_args.index_end):
         parser.error("End iteration index should be specified.")
     if not bool(main_args.num_user):

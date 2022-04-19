@@ -58,7 +58,7 @@ class User:#{{{
         return "{}".format(self.id)#}}}
 
 class TrajectoryNode:#{{{
-    def __init__(self, position, parent=None):
+    def __init__(self, position, parent=None, num_iter=0):
         # value
         self.position = position
         self.elapsed_time = 0.
@@ -78,7 +78,7 @@ class TrajectoryNode:#{{{
 
             start = time.time()
             # Calculate reward
-            self.reward = self.get_reward()
+            self.reward = self.get_reward(num_iter)
 #            self.reward = self.get_random_reward()
             self.elapsed_time = time.time()-start
 
@@ -156,66 +156,31 @@ class TrajectoryNode:#{{{
         # LIST OF VALID USERS
         return valid_users
 
-    def get_reward(self):#{{{
-        max_reward = 0
-        max_ra = []
-        max_psd = []
-        max_user_list = []
-        # Iteration of all possible user set.
-        # Size of power set is 2^(size of set)
-        # i is a decimal index of an element of power set
-        # ex) Size of vself.alid_users: 5 --> Size of power set = 2^5
-        # if i=5 = 00101 (2) --> candidate_valid_user_list = [valid_users[0], valid_users[2]]
-        # for more explanation, https://gist.github.com/hslyu/4b4267a76cd2a90d22fbb9957c915f1f 
-        valid_users = self.get_valid_user()
-        for i in range(2**len(valid_users)):
-            candidate_valid_user_list = []
+    def get_reward(self, num_iter = 0):
+        # Initialize user psd, snr, and se.
+        for user in self.user_list:
+            # initial psd of users
+            user.psd = POWER/BANDWIDTH
+            # SNR in dBm
+            user.snr = self.psd2snr(user.psd, user.pathloss)
+            user.se = self.snr2se(user.snr)
 
-            # Convert i to the candidate_valid_user_list
-            for j in range(len(valid_users)): 
-                if i & 1<<j:
-                    candidate_valid_user_list.append(valid_users[j])
+        ua_list, ra_list = self.init_ua_ra()
+        psd_list = self.kkt_psd(ua_list)
+        reward = self.objective_function([user.psd for user in ua_list], ua_list)
+        prev_reward = reward
+        count=1
+        
+        while count < num_iter:
+            count += 1
+            psd_list = self.kkt_psd(ua_list) # return psd
+            ra_list = self.kkt_ra(ua_list) # return ra
+            reward = self.objective_function(psd_list, ua_list)
+            if abs(prev_reward-reward) < 1e-3 or count >= 5:
+                break;
+            prev_reward = reward
 
-            # Initialize user psd, snr, and se.
-            for user in self.user_list:
-                # initial psd of users
-                user.psd = POWER/BANDWIDTH
-                # SNR in dBm
-                user.snr = self.psd2snr(user.psd, user.pathloss)
-                user.se = self.snr2se(user.snr)
-
-            # Check feasibility of the candidate_valid_user_list
-            required_resource = 0
-            for user in candidate_valid_user_list:
-                required_resource += user.datarate/user.se
-            # If required resource exceeds available bandwidth, it is infeasible
-            if required_resource >= BANDWIDTH:
-                continue
-            if len(candidate_valid_user_list) == 0:
-                continue
-
-            candidate_reward = 0
-            ra = self.kkt_ra(candidate_valid_user_list)
-            prev_candidate_reward = self.objective_function([user.psd for user in candidate_valid_user_list],\
-                    candidate_valid_user_list)
-            count=0
-            while True:
-                count += 1
-#                print(count)
-                psd = self.kkt_psd(candidate_valid_user_list) # return psd
-                ra = self.kkt_ra(candidate_valid_user_list) # return ra
-                candidate_reward = self.objective_function(psd, candidate_valid_user_list)
-                if abs(prev_candidate_reward-candidate_reward) < 1e-3 or count >= 5:
-                    break;
-                prev_candidate_reward = candidate_reward
-
-            if max_reward < candidate_reward:
-                max_reward = candidate_reward
-                max_ra = ra
-                max_psd = psd
-                max_user_list = candidate_valid_user_list
-
-        for user, ra, psd in zip(max_user_list, max_ra, max_psd):
+        for user, ra, psd in zip(ua_list, ra_list, psd_list):
             self.user_list[user.id].ra = ra
             self.user_list[user.id].psd = psd
             user.snr = self.psd2snr(user.psd, user.pathloss)
@@ -223,15 +188,47 @@ class TrajectoryNode:#{{{
             self.user_list[user.id].received_data += ra*user.se
             self.user_list[user.id].total_data += ra*user.se
             user.serviced_time += 1
-#        print("Current time:", self.current_time)
-#        print("max_psd:", max_psd)
-#        print("power:", sum([psd*ra for psd, ra in zip(max_psd,max_ra)]))
-#        print("Resource:", max_ra)
-#        print("Sum resource:", sum(max_ra))
-#        print("Throughput List", [user.total_data//10 for user in self.user_list])
-        # find max obj. ftn value (reward) and resource and power control
-        return max_reward
-    #}}}
+
+        return reward
+    
+
+    def init_ua_ra(self):
+        def ra_objective(sorted_valid_user_list, ra_list):
+            return sum([math.log2(1+20*ra*user.se/user.total_data) if user.time_start <= self.current_time <= user.time_end else 0 for user, ra in zip(sorted_valid_user_list, ra_list)])
+            
+        def sort_key(user):
+            return 1./(user.total_data/user.se + user.datarate)
+
+        sorted_valid_user_list = sorted(self.get_valid_user(), key=sort_key, reverse=True)
+        sorted_valid_user_list = [user for user in sorted_valid_user_list if user.datarate / user.se < BANDWIDTH]
+        ra_filler = [user.total_data / user.se for user in sorted_valid_user_list]
+        ra_min = [user.datarate / user.se for user in sorted_valid_user_list]
+
+        max_ra_list = []
+        max_objective = -999999
+        # Break flag for double for-loop
+        is_infeasible = False
+        for i in range(len(sorted_valid_user_list)):
+            ra_list = [( BANDWIDTH + sum(ra_filler[:i+1]) ) / (i+1) - ra_filler[idx] for idx in range(i+1)] + [0] * ( len(self.user_list) - i - 1 )
+
+            # Check feasibility of the requested datarate
+            for idx in range(i+1):
+                if ra_min[idx] > ra_list[idx]:
+                    is_infeasible = True
+            if is_infeasible:
+                break
+
+            if max_objective < ra_objective(sorted_valid_user_list, ra_list):
+                max_objective = ra_objective(sorted_valid_user_list, ra_list)
+                max_ra_list = ra_list
+        
+        candidate_user_list = []
+        for user, ra in zip(sorted_valid_user_list, max_ra_list):
+            user.ra = ra
+            if ra > 0:
+                candidate_user_list.append(user)
+
+        return candidate_user_list, max_ra_list
 
     def kkt_ra(self, user_list):#{{{
         """
@@ -446,9 +443,6 @@ class TrajectoryTree:#{{{
         self.max_altitude = max_altitude
         self.tree_depth = tree_depth
         self.max_time = max_time
-        # Make adjacent node tree with TREE_DEPTH
-        # Parenthesize self.root for recursive function implementation.
-        self.recursive_find_leaf([self.root], node_level=0) 
 
     # Depth First Search
     def DFS(self, current):
@@ -551,16 +545,31 @@ class TrajectoryTree:#{{{
     def pathfinder(self):
         #{{{
         path = []
-        for i in range(self.max_time):
-            path.append(self.root)
+        path.append(self.root)
+        current=0
+        while current < self.max_time:
             # DFS return = reversed path, reward
             # a.DFS(a.root)[0] = reversed path = [last leaf, ... , first leaf, root]
             # reversed path[-2] = first leaf = next root
             start=time.time()
-            self.root = self.DFS(self.root)[0][-2]
-            self.recursive_find_leaf([self.root], 1) 
+            # Adjust node level according to the left time steps.
+            # node_level -> tree_depth :
+            # 1 -> tree depth, 
+            # 2 -> tree depth-1, ...
+            node_level = 1 if self.max_time-current > self.tree_depth else self.tree_depth + 1 - (self.max_time - current)
+            self.recursive_find_leaf([self.root], node_level) 
+            # sub_path = self.DFS(self.root)[0][:-1] -> [last leaf, ... , first leaf]
+            # sub_path.reverse() -> [first leaf, ..., last leaf] 
+            sub_path = self.DFS(self.root)[0][:-1]
+            sub_path.reverse()
+            # Append path
+            path = path + sub_path
+            current += self.tree_depth - node_level + 1
+            # Set new root
+            self.root = path[-1]
             self.root.elapsed_time = time.time()-start
-            print(f'current step: {i}, reward: {self.root.reward:.2f}, elapsed time: {self.root.elapsed_time:.2f}', end='\r', flush=True)
+#            print(f'current step: {i}, reward: {self.root.reward:.2f}, elapsed time: {self.root.elapsed_time:.2f}', end='\r', flush=True)
+            print(f'current step: {current}, reward: {self.root.reward:.2f}, elapsed time: {self.root.elapsed_time:.2f}')
 #            self.root.get_info()
         print('')
         return path
@@ -679,14 +688,15 @@ if __name__ =="__main__":
     MAP_WIDTH = 400 # meter, Both X and Y axis width
     MIN_ALTITUDE = 50 # meter
     MAX_ALTITUDE = 100 # meter
-    GRID_SIZE = 20 # meter
+    GRID_SIZE = 20 # metetr
     # Constant for user
-    NUM_UE = 25
-    TIME_WINDOW_SIZE = [3,5]
+    NUM_UE = 50
+    TIME_WINDOW_SIZE = [10, 30]
     TIME_PERIOD_SIZE = [100, 150]
     DATARATE_WINDOW = [35, 60] # Requiring datarate Mb/s
     INITIAL_DATA = 10 # Mb
-    TREE_DEPTH = 3
+    TREE_DEPTH = 4
+    MAX_DATA = 99999999
 
     position = [random.randint(0, MAP_WIDTH)//10*10,
                  random.randint(0, MAP_WIDTH)//10*10,
@@ -702,7 +712,7 @@ if __name__ =="__main__":
         user = User(i, # id
                 [random.randint(0, MAP_WIDTH), random.randint(0, MAP_WIDTH)], # position
                 random.randint(0, time_period-tw_size), tw_size, time_period, # time window
-                datarate, INITIAL_DATA, 4*datarate) # data
+                datarate, INITIAL_DATA, MAX_DATA) # data
         user_list.append(user)
     root.user_list = user_list
 
