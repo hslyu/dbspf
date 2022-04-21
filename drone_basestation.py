@@ -137,7 +137,10 @@ class TrajectoryNode:#{{{
         """ 
         Because unit of psd is 200mW/20MHz, we should convert it to mw/Hz
         """
-        return 10*math.log10(psd) - pathloss - NOISE_DENSITY
+        if psd == 0:
+            return 0
+        else:
+            return 10*math.log10(psd) - pathloss - NOISE_DENSITY
 
     def snr2se(self,snr):
         """
@@ -412,10 +415,14 @@ class TrajectoryNode:#{{{
 #        print("candidate_psd_list:", candidate_psd_list)
 #        print(f'sum: {sum([user.ra*candidate_psd_list[idx] for idx,user in enumerate(user_list)]):04f}')
 #        print('----')
-        
+
         return max_psd_list#}}}
 
     def objective_function(self, psd_list, user_list):#{{{
+        if any(psd <0 for psd in psd_list):
+            print(psd_list)
+            exit()
+
         value=0
         for psd, user in zip(psd_list, user_list):
             snr = self.psd2snr(psd, user.pathloss)
@@ -569,7 +576,7 @@ class TrajectoryTree:#{{{
             self.root = path[-1]
             self.root.elapsed_time = time.time()-start
 #            print(f'current step: {i}, reward: {self.root.reward:.2f}, elapsed time: {self.root.elapsed_time:.2f}', end='\r', flush=True)
-            print(f'current step: {current}, reward: {self.root.reward:.2f}, elapsed time: {self.root.elapsed_time:.2f}')
+#            print(f'current step: {current}, reward: {self.root.reward:.2f}, elapsed time: {self.root.elapsed_time:.2f}')
 #            self.root.get_info()
         print('')
         return path
@@ -683,19 +690,19 @@ if __name__ =="__main__":
     # Constant for UAV
     VEHICLE_VELOCITY = 20. # m/s
     TIME_STEP = 1 # s
-    MAX_TIME = 200 # unit of (TIME_STEP) s
+    MAX_TIME = 20 # unit of (TIME_STEP) s
     ## Constant for map
     MAP_WIDTH = 400 # meter, Both X and Y axis width
     MIN_ALTITUDE = 50 # meter
     MAX_ALTITUDE = 100 # meter
-    GRID_SIZE = 20 # metetr
+    GRID_SIZE = 20 # meter
     # Constant for user
-    NUM_UE = 50
-    TIME_WINDOW_SIZE = [10, 30]
-    TIME_PERIOD_SIZE = [100, 150]
-    DATARATE_WINDOW = [35, 60] # Requiring datarate Mb/s
+    NUM_UE = 5
+    TIME_WINDOW_SIZE = [20, 20]
+    TIME_PERIOD_SIZE = [999, 999]
+    DATARATE_WINDOW = [0, 0] # Requiring datarate Mb/s
     INITIAL_DATA = 10 # Mb
-    TREE_DEPTH = 4
+    TREE_DEPTH = 3
     MAX_DATA = 99999999
 
     position = [random.randint(0, MAP_WIDTH)//10*10,
@@ -709,9 +716,13 @@ if __name__ =="__main__":
         tw_size = random.randint(TIME_WINDOW_SIZE[0], TIME_WINDOW_SIZE[1])
         time_period = random.randint(TIME_PERIOD_SIZE[0], TIME_PERIOD_SIZE[1])
         datarate = random.randint(DATARATE_WINDOW[0], DATARATE_WINDOW[1])
+#        user = User(i, # id
+#                [random.randint(0, MAP_WIDTH), random.randint(0, MAP_WIDTH)], # position
+#                random.randint(0, time_period-tw_size), tw_size, time_period, # time window
+#                datarate, INITIAL_DATA, MAX_DATA) # data
         user = User(i, # id
                 [random.randint(0, MAP_WIDTH), random.randint(0, MAP_WIDTH)], # position
-                random.randint(0, time_period-tw_size), tw_size, time_period, # time window
+                0, tw_size, time_period, # time window
                 datarate, INITIAL_DATA, MAX_DATA) # data
         user_list.append(user)
     root.user_list = user_list
