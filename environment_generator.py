@@ -14,19 +14,19 @@ DIRECTORY_PATH = os.path.join(os.getcwd(),'data')
 # Number of iteration
 NUM_ITERATION=1000
 # Constant for UAV
-VEHICLE_VELOCITY = 10. # m/s
+VEHICLE_VELOCITY = 15. # m/s
 TIME_STEP = 1 # s
-MAX_TIME = 200 # unit of (TIME_STEP) s
+MAX_TIME = 60 # unit of (TIME_STEP) s
 ## Constant for map
-MAP_WIDTH = 200 # meter, Both X and Y axis width
+MAP_WIDTH = 400 # meter, Both X and Y axis width
 MIN_ALTITUDE = 50 # meter
 MAX_ALTITUDE = 100 # meter
-GRID_SIZE = 10 # meter
+GRID_SIZE = 15 # meter
 # Constant for user
 NUM_UE = 200
-TIME_WINDOW_SIZE = [3,7]
-TIME_PERIOD_SIZE = [90, 130]
-DATARATE_WINDOW = [35,60] # Requiring datarate Mb/s
+TIME_WINDOW_SIZE = [3,3]
+TIME_PERIOD_SIZE = [MAX_TIME, MAX_TIME]
+DATARATE_WINDOW = [50,50] # Requiring datarate Mb/s
 INITIAL_DATA = 10 # Mb
 
 def get_parser():
@@ -75,12 +75,13 @@ def environment_generator(parser):
             tw_size = random.randint(args.time_window_size[0], args.time_window_size[1])
             time_period = random.randint(args.time_period_size[0], args.time_period_size[1])
             user_data['position'] = [random.randint(0, args.map_width), random.randint(0, args.map_width)]
-            user_data['time_start'] = random.randint(0, time_period-tw_size)
+            user_data['time_start'] = random.randint(0, args.max_time-tw_size)
             user_data['tw_size'] = tw_size
             user_data['time_period'] = time_period
             user_data['datarate'] = random.randint(args.datarate_window[0], args.datarate_window[1])
             user_data['total_data'] = args.initial_data
-            user_data['max_data'] = random.randint(3,5)*user_data['datarate']
+#            user_data['max_data'] = random.randint(3,5)*user_data['datarate']
+            user_data['max_data'] = 999999
             user_list.append(user_data)
         env_dict['user_list'] = user_list
 
