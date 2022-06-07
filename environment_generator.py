@@ -16,7 +16,7 @@ NUM_ITERATION=1000
 # Constant for UAV
 VEHICLE_VELOCITY = 15. # m/s
 TIME_STEP = 1 # s
-MAX_TIME = 60 # unit of (TIME_STEP) s
+MAX_TIMESLOT = 60 # unit of (TIME_STEP) s
 ## Constant for map
 MAP_WIDTH = 400 # meter, Both X and Y axis width
 MIN_ALTITUDE = 50 # meter
@@ -25,8 +25,8 @@ GRID_SIZE = 15 # meter
 # Constant for user
 NUM_UE = 200
 TIME_WINDOW_SIZE = [3,3]
-TIME_PERIOD_SIZE = [MAX_TIME, MAX_TIME]
-DATARATE_WINDOW = [50,50] # Requiring datarate Mb/s
+TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
+DATARATE_WINDOW = [0,0] # Requiring datarate Mb/s
 INITIAL_DATA = 10 # Mb
 
 def get_parser():
@@ -36,7 +36,7 @@ def get_parser():
     parser.add_argument('--num_iteration', default=NUM_ITERATION, type=int, help='Total number of iteration')
     parser.add_argument('--vehicle_velocity', default=VEHICLE_VELOCITY, type=float, help='Drone maximum velocity')
     parser.add_argument('--time_step', default=TIME_STEP, type=int, help='Time unit for trajectory planning')
-    parser.add_argument('--max_time', default=MAX_TIME, type=int, help='Total time of trajectory planning')
+    parser.add_argument('--max_timeslot', default=MAX_TIMESLOT, type=int, help='Total time of trajectory planning')
     parser.add_argument('--map_width', default=MAP_WIDTH, type=int, help='Map width')
     parser.add_argument('--min_altitude', default=MIN_ALTITUDE, type=int, help='Minimum altitude')
     parser.add_argument('--max_altitude', default=MAX_ALTITUDE, type=int, help='Maximum altitude')
@@ -75,7 +75,7 @@ def environment_generator(parser):
             tw_size = random.randint(args.time_window_size[0], args.time_window_size[1])
             time_period = random.randint(args.time_period_size[0], args.time_period_size[1])
             user_data['position'] = [random.randint(0, args.map_width), random.randint(0, args.map_width)]
-            user_data['time_start'] = random.randint(0, args.max_time-tw_size)
+            user_data['time_start'] = random.randint(0, args.max_timeslot-tw_size)
             user_data['tw_size'] = tw_size
             user_data['time_period'] = time_period
             user_data['datarate'] = random.randint(args.datarate_window[0], args.datarate_window[1])

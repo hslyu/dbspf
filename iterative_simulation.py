@@ -15,6 +15,7 @@ def get_parser():
     parser = argparse.ArgumentParser(description='Simulate drone base station with specific depth',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-t', '--tree_depth', type=int, help='Tree depth')
+    parser.add_argument('-n', '--num_node_iter', type=int, default=0, help='Number of node iteration.')
     parser.add_argument('--env_path', default=os.path.join(os.getcwd(), 'data'), type=str, help='Path of the environment directory')
     parser.add_argument('--env_args_filename', default='args.json', type=str, help='Filename of the environment argument json file')
     parser.add_argument('--result_path', default=os.path.join(os.getcwd(), 'result'), type=str, help='Path of the result directory')
@@ -91,11 +92,10 @@ if __name__ =="__main__":
         if main_args.datarate_experiment:
             for user in root.user_list:
                 user.datarate = env_args.datarate_window[0]
-                user.max_data = 150
         tree = dbs.TrajectoryTree(root, env_args.vehicle_velocity,
                                 env_args.time_step, env_args.grid_size,
                                 env_args.map_width, env_args.min_altitude, env_args.max_altitude,
-                                main_args.tree_depth, env_args.max_time)
+                                main_args.tree_depth, main_args.num_node_iter, env_args.max_timeslot)
         dbs_trajectory = tree.pathfinder()
         total_reward = 0
         total_time = 0

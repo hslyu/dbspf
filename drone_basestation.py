@@ -729,7 +729,7 @@ if __name__ =="__main__":
     NUM_NODE_ITER = 0
     TIME_WINDOW_SIZE = [20, 20]
     TIME_PERIOD_SIZE = [999, 999]
-    DATARATE_WINDOW = [0, 0] # Requiring datarate Mb/s
+    DATARATE_WINDOW = [5, 5] # Requiring datarate Mb/s
     INITIAL_DATA = 10 # Mb
     TREE_DEPTH = 4
     MAX_DATA = 99999999
