@@ -11,12 +11,17 @@ import random
 import numpy as np
 from scipy.stats import rice
 
+import os
+import json
+import argparse
+import pickle
+
 @dataclass
 class Parameters:
     # Some numbers
-    num_ue: int=5
+    num_ue: int=10
     num_subcarriers: int=10
-    num_timeslots: int=20
+    num_timeslots: int=60
     # Map
     map_width: int=400 # meter
     min_altitude: int=30 # meter
@@ -29,20 +34,24 @@ class Parameters:
     pathloss_a2g_a: float=9.6
     pathloss_a2g_b: float=0.28
     pathloss_excessive_LoS: float=1 # dB
-    pathloss_excessive_NLoS: float=20 # dB
+    pathloss_excessive_NLoS: float=40 # dB
+    # Time period
+    time_window_size = 4
+    time_start_range = [0, num_timeslots-time_window_size]
     # Communication parameters
-    SNR_threshold: float=300
-    noise: float=-96 # dBm
+    SNR_threshold: float=0
+    noise: float=-121.45 # dBm
     ICI: float=-110 # dBm
     frequency: float=2 # GHz (Normalized)
+    subcarrier_bandwidth: float=0.18 # MHz = 180 KHz
     lightspeed: float=3e-1 # 1e9 m/s (Normalized)
-    max_ue_power_mW: int=50 # mW
-    max_uav_power_mW: int=300 # mW
+    max_ue_power_mW: int=200 # mW
+    max_uav_power_mW: int=200 # mW
     max_ue_power_dB: float=10*math.log10(max_ue_power_mW) # dBm
     max_uav_power_dB: float=10*math.log10(max_uav_power_mW) # dBm
     # rician_k from paper: Air–Ground Channel Characterization for Unmanned Aircraft Systems-
     # Part III: The Suburban and Near-Urban Environments
-    rician_K: float= 12.4 # dB
+    rician_K: float= 11.4 # dB
 
     # iteration threshold
     epsilon_TO: float=0.01
@@ -76,19 +85,39 @@ class Position:
         if other is not None:
             return (self-other).l2_norm()
 
-@dataclass
 class Device:
-    position: Position = Position()
-    list_subcarrier_UBS: List[Subcarrier] = None
-    list_subcarrier_GBS: List[Subcarrier] = None
-    mode: int = 0
-    los_prob: float = 0
-    serviced_data: float=1
+#    position: Position = Position()
+#    list_subcarrier_UBS: List[Subcarrier] = None
+#    list_subcarrier_GBS: List[Subcarrier] = None
+#    mode: int = 0
+#    los_prob: float = 0
+#    serviced_data: float=1
+
+    def __init__(self, id: int, position: Position=Position(),
+            list_subcarrier_UBS: List[Subcarrier]=None, list_subcarrier_GBS: List[Subcarrier]=None,
+            mode: int=0, time_start:int=0, tw_size:int=0):
+        self.id = id
+        self.position = position
+        self.list_subcarrier_UBS = list_subcarrier_UBS
+        self.list_subcarrier_GBS = list_subcarrier_GBS
+        self.time_start = time_start
+        self.time_end = self.time_start + tw_size
+        self.serviced_time = 0
+        self.mode = mode
+        self.los_prob = 0
+        self.serviced_data = 10
+
+    def __repr__(self):
+        return "{}".format(self.id)#}}}
 
 @dataclass
 class GroundBasestation:
-    position: Position = Position(param.map_width/2, param.map_width/2, 10)
+    position: Position = Position(param.map_width/2, param.map_width/2, 30)
     list_ue: List[Device] = None
+
+    def save(self, path):
+        with open(path, 'wb') as f:
+            pickle.dump(self, f)
 
     def calc_channel(self):
         for ue in self.list_ue:
@@ -108,6 +137,10 @@ class UAVBasestation:
     GBS: GroundBasestation = None
     gbs_channel: float = 0
     gbs_los_prob: float = 0
+
+    def save(self, path):
+        with open(path, 'wb') as f:
+            pickle.dump(self, f)
 
     def calc_pathloss(self):
         for ue in self.list_ue:
@@ -163,8 +196,9 @@ class UAVBasestation:
             nlos_phase = (1/(param.rician_K+1))**.5 * np.random.multivariate_normal(np.zeros(2), 0.5*np.eye(2), size=1)[0]
             nlos_real = nlos_phase[0]
             nlos_im = nlos_phase[1]
-            fading = ( (los_real+nlos_real)**2 + (los_im+nlos_im)**2)
+            fading = ( (los_real+nlos_real)**2 + (los_im+nlos_im)**2)*.5
             subcarrier.channel = 10*math.log10(fading) - subcarrier.pathloss
+#            print(10*math.log10(fading) - subcarrier.pathloss)
     
     def los_prob(self, pos_other: Position):
 #        if any( [isinstance(ax[1], cp.Variable) for ax in vars(self.position).items()]):
@@ -195,33 +229,55 @@ class UAVBasestation:
         
         return 2 / D - 1 / D**2 - a / D**2 * exp( -b * (approx_theta() - a))
 
-def initialize_users():
-    list_ue = []
-    # Make default subcarrier
-    for _ in range(param.num_ue):
-        position = Position(random.randint(0, param.map_width), random.randint(0, param.map_width), 0)
-        list_subcarrier_UBS = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
-        list_subcarrier_GBS = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
-
-        ue = Device(position, list_subcarrier_UBS, list_subcarrier_GBS, random.randint(0,1))
-        list_ue.append(ue)
+def initialize_users(path: str=None):
+    if path==None:
+        list_ue = []
+        # Make default subcarrier
+        for i in range(param.num_ue):
+            position = Position(random.randint(0, param.map_width), random.randint(0, param.map_width), 0)
+            list_subcarrier_UBS = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
+            list_subcarrier_GBS = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
+            ue = Device(i, position, list_subcarrier_UBS, list_subcarrier_GBS, random.randint(0,1), random.randint(param.time_start_range[0], param.time_start_range[1]), param.time_window_size)
+            list_ue.append(ue)
+    else:
+        with open(path) as f:
+            env = json.load(f)
+            user_dict_list = env['user_list']
+            list_ue = []
+            # Make default subcarrier
+            for user_dict in user_dict_list[0:param.num_ue]:
+                position = Position(*user_dict['position'], 0)
+                list_subcarrier_UBS = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
+                list_subcarrier_GBS = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
+                ue = Device(user_dict['id'], position, 
+                        list_subcarrier_UBS, list_subcarrier_GBS, 0, 
+                        user_dict['time_start'], user_dict['tw_size'])
+                list_ue.append(ue)
 
     return list_ue
 
-def initialize_network():
-    prev_position = Position(random.randint(0, param.map_width), random.randint(0, param.map_width), 50)
-    position = Position(random.randint(0, param.map_width), random.randint(0, param.map_width), 50)
-    list_subcarrier = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
-#    position = Position(random.randint(0, param.map_width), cp.Variable(pos=True, name='x'), 49)
-#    is_variable = any( [isinstance(ax[1], cp.Variable) for ax in vars(position).items()])
+def initialize_network(path: str=None):
+    if path == None:
+        prev_position = Position(random.randint(0, param.map_width), random.randint(0, param.map_width), 50)
+        position = Position(random.randint(0, param.map_width), random.randint(0, param.map_width), 50)
+    #    position = Position(random.randint(0, param.map_width), cp.Variable(pos=True, name='x'), 49)
+    #    is_variable = any( [isinstance(ax[1], cp.Variable) for ax in vars(position).items()])
 
-    list_ue = initialize_users()
+        list_ue = initialize_users()
+    else:
+        with open(path) as f:
+            env = json.load(f)
+            prev_position = Position(*env['root_position'])
+            position = prev_position
+        list_ue = initialize_users(path)
+
+    list_subcarrier = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
     GBS = GroundBasestation(Position(param.map_width/2, param.map_width/2, 10), list_ue)
     UBS = UAVBasestation(prev_position, position, list_ue, list_subcarrier, GBS = GBS)
     UBS.calc_pathloss()
     UBS.calc_channel()
     GBS.calc_channel()
-
+#    print(list_ue[1].__dict__)
     return UBS, GBS, list_ue
 
 
@@ -282,6 +338,7 @@ if __name__=="__main__":
     param.num_ue = 2
     param.num_subcarriers = 2
 
-    UBS, GBS, list_ue = initialize_network()
+    UBS, GBS, list_ue = initialize_network('/home/hslyu/dbspf/data/env/env_0000.json')
+#    UBS, GBS, list_ue = initialize_network()
 #    los_prob_approximation_test()
     initialization_validity_check()
