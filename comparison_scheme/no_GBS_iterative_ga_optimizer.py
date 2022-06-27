@@ -1,14 +1,26 @@
+#! /usr/bin/env python
 import system_model as sm
 import math
 import numpy as np
 import pygad
 import copy
+import argparse
 
 import os, json
 import time
 import pickle
 
 param = sm.param
+
+def get_parser():
+    parser = argparse.ArgumentParser(description='Simulate drone base station with specific depth',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--env_path', type=str, default=os.path.join(os.getcwd(), '../data'), help='Path of the environment directory')
+    parser.add_argument('--result_path', type=str, default=os.path.join(os.getcwd(), 'result'), help='Path of the result directory')
+    parser.add_argument('--index_start', type=int, default=0, help='Iteration start index')
+    parser.add_argument('--index_end', type=int, help='Iteration end index')
+    return parser
+
 def get_valid_user(user_list: list[sm.Device], time_index):
     valid_user_list = []
     for user in user_list:
@@ -58,11 +70,8 @@ def encode_gene_max_snr(UBS, GBS, list_ue, time_index):
     list_position = np.zeros(3)
 
     gene = np.concatenate((list_ue_UBS_alpha, list_ue_power, list_position))
-#    print(f"{list_ue_mode= }")
 #    print(f"{list_ue_UBS_alpha= }")
-#    print(f"{list_ue_GBS_alpha= }")
 #    print(f"{list_ue_power = }")
-#    print(f"{list_UBS_power = }")
 #    print(f"{list_position = }")
 #    print(len(gene))
     return gene
@@ -78,7 +87,7 @@ def decode_gene(X):
     list_ue_power_encoded = X[a:b] # before softmax
     list_ue_power_encoded = list_ue_power_encoded.reshape((param.num_ue,-1))
     list_ue_power_encoded = np.multiply(list_ue_UBS_alpha, list_ue_power_encoded )
-    list_ue_power = list_ue_power_encoded/sum(list_ue_power_encoded.flatten()) * param.max_ue_power_mW
+    list_ue_power = list_ue_power_encoded/sum(list_ue_power_encoded.flatten()) * param.max_ue_power_mW if sum(list_ue_power_encoded.flatten()) !=0 else list_ue_power_encoded
 #    list_ue_power = np.apply_along_axis(proportion_array, 1, list_ue_power_encoded) * param.max_ue_power_mW
 
     theta = math.radians(X[b] * 10)
@@ -125,11 +134,13 @@ def sol2rate(solution, mode_penalty=True):
                 carrier_rate = 0
                 # R^k_{n,R} in paper. eq (31)
                 power_ue_UBS = list_ue_power[i, j] * dB2orig(subcarrier.channel)
-#                print(list_ue_power[i,j])
                 snr = power_ue_UBS / dB2orig(param.noise)
                 # eq (35h) penalty function : QoS of ue - UBS and UBS - GBS link
+#                print('')
                 if snr < param.SNR_threshold:
                     continue
+#                else:
+#                    print(snr)
                 carrier_rate += param.subcarrier_bandwidth*math.log2(1 + snr) / 2 # Datarate of k-th subcarrier for i-th user
                 sumrate += carrier_rate
 
@@ -156,6 +167,9 @@ def callback_generation(ga_instance):
 #    print( f'{Generation = :02d},\t {Fitness = },\t\t {Change = }')
     last_fitness = ga_instance.best_solution()[1]
 
+parser = get_parser()
+args = parser.parse_args()
+
 ue_alpha_bound   = {'low' : 0,'high' : param.num_ue + 1} # int
 ue_power_bound   = {'low' : 0,'high' : 10 + 1} # int, The number 0 and 100 are not power bounds. It is softmax ratio
 theta_bound      = {'low' : 0,'high' : 36} # int
@@ -181,20 +195,21 @@ gene_type.append(int)
 gene_space.append(radius_bound)
 gene_type.append(int)
 
-num_generations = 10 # Number of generations.
-num_parents_mating = 1 # Number of solutions to be selected as parents in the mating pool.
-sol_per_pop = 4 # Number of solutions in the population.
+num_generations = 8000 # Number of generations.
+num_parents_mating = 10 # Number of solutions to be selected as parents in the mating pool.
+sol_per_pop = 80 # Number of solutions in the population.
 #           subcarrier allocation          power allocation             theta pi radius
 num_genes = param.num_subcarriers + param.num_ue * param.num_subcarriers + 1 + 1 + 1
 
-num_exp = 10
+idx_start = args.index_start
+idx_end = args.index_end
 avg_time=0
 avg_obj=0
 current_obj = 0
-for i in range(num_exp):#{{{
+for i in range(idx_start, idx_end):#{{{
     envname = f'env_{i:04d}'
-    dirname = f'result/tw{param.num_timeslots}_user{param.num_ue}/{envname}'
-    UBS, GBS, list_ue = sm.initialize_network(f'/home/hslyu/dbspf/data/tw60/env/{envname}.json')
+    dirname = os.path.join(args.result_path, f'tw{param.num_timeslots}_user{param.num_ue}/{envname}')
+    UBS, GBS, list_ue = sm.initialize_network(os.path.join(args.env_path, f'env/{envname}.json'))
     #UBS, GBS, list_ue = sm.initialize_network()
 
     start = time.time()
@@ -215,7 +230,7 @@ for i in range(num_exp):#{{{
                                crossover_type = 'single_point',
                                gene_type = copy.deepcopy(gene_type),
                                gene_space = gene_space,
-                               stop_criteria = ["saturate_30"]
+                               stop_criteria = ["saturate_750"]
                                )
         
         # Running the GA to optimize the parameters of the function.
@@ -227,11 +242,11 @@ for i in range(num_exp):#{{{
 
         # Returning the details of the best solution.
         solution, solution_fitness, solution_idx = ga_instance.best_solution()
-#        print("Parameters of the best solution : {solution}".format(solution=solution)){{{
+#        print("Parameters of the best solution : {solution}".format(solution=solution))
 #        print("Fitness value of the best solution = {solution_fitness}".format(solution_fitness=solution_fitness))
 #        print("Index of the best solution : {solution_idx}".format(solution_idx=solution_idx))
 #        if ga_instance.best_solution_generation != -1:
-#            print("Best fitness value reached after {best_solution_generation} generations.".format(best_solution_generation=ga_instance.best_solution_generation))}}}
+#            print("Best fitness value reached after {best_solution_generation} generations.".format(best_solution_generation=ga_instance.best_solution_generation))
 
         # Applying solution to system model
         list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z = decode_gene(solution)
@@ -239,6 +254,7 @@ for i in range(num_exp):#{{{
 
         for rate, ue in zip(list_rate, list_ue):
             ue.serviced_data += rate
+
         UBS.prev_position = UBS.position
         UBS.position = sm.Position(position_x, position_y, position_z)
 
@@ -252,11 +268,10 @@ for i in range(num_exp):#{{{
             print(f'Current episode: {i}, time: {time_index}, reward: {solution_fitness:.4f}, current obj: {current_obj: .4f}, avg. obj: {avg_obj:.4f}, avg. elapsed time: {avg_time:.4f}')
         else:
             print(f'Current episode: {i}, time: {time_index}, reward: {solution_fitness:.4f}, current obj: {current_obj/i: .4f},, avg. obj: {avg_obj/i:.4f}, avg. elapsed time: {avg_time/i:.4f}')
-        
 
     avg_time += time.time()-start
-    avg_obj += sum([math.log2(ue.serviced_data-10) for ue in list_ue])#}}}
+    avg_obj += sum([math.log2(ue.serviced_data-10) for ue in list_ue if ue.serviced_data != 10])#}}}
 
-avg_time /= num_exp
-avg_obj /= num_exp
+avg_time /= idx_end-idx_start
+avg_obj /= idx_end-idx_start
 print(f'{avg_time = }, {avg_obj = }')

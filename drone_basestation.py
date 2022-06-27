@@ -11,7 +11,7 @@ from dataclasses import dataclass
 # Constant for wirless communication{{{
 FREQUENCY = 2.0*1e9 # Hz
 LIGHTSPEED = 3*1e8 # m/s
-BANDWIDTH_ORIG = 2 # To make scalable
+BANDWIDTH_ORIG = 1.8 # To make scalable
 BANDWIDTH = 1. # 20 MHz per unit
 POWER = 1. # 200 mW per unit
 NOISE_DENSITY = -174 # dBm/20MHz , noise spectral density(Johnson-Nyquist_noise)
@@ -19,14 +19,14 @@ LOS_EXCESSIVE = 1 # dB, excessive pathloss of los link
 NLOS_EXCESSIVE = 40 # dB, excessive pathloss of nlos link
 #LOS_EXCESSIVE = 1 # dB, excessive pathloss of los link
 #NLOS_EXCESSIVE = 20 # dB, excessive pathloss of nlos link
-SURROUNDING_A = 9.6 # Envrionmental parameter for probablistic LOS link
-SURROUNDING_B = 0.28 # Envrionmental parameter for probablistic LOS link
+SURROUNDING_A = 9.64 # Envrionmental parameter for probablistic LOS link
+SURROUNDING_B = 0.06 # Envrionmental parameter for probablistic LOS link
 #SURROUNDING_A = 9.6 # Envrionmental parameter for probablistic LOS link
 #SURROUNDING_B = 0.28 # Envrionmental parameter for probablistic LOS link
 # Optimization hyperparameter
 EPSILON = 1e-9
-STEP_SIZE = 1e-1
-THRESHOLD = 1e-7
+STEP_SIZE = 1e-3
+THRESHOLD = 1e-8
 # etc
 INF = 1e8-1#}}}
 
@@ -41,7 +41,7 @@ class User:#{{{
         self.time_end = self.time_start + tw_size
         self.time_period = time_period
         self.serviced_time = 0
-        # Requiring datarate b/s
+        # Requiring datarate Mb/s
         self.datarate = datarate
         self.max_data = max_data
         self.pathloss = 0.
@@ -192,6 +192,8 @@ class TrajectoryNode:#{{{
         return valid_users
 
     def get_reward(self, num_iter = 0):
+        if self.get_valid_user() == []:
+            return 0
         # Initialize user psd, snr, and se.
         for user in self.user_list:
             # initial psd of users
@@ -209,14 +211,17 @@ class TrajectoryNode:#{{{
         prev_reward = reward
         count=1
         
-        while count < num_iter:
-            count += 1
-            psd_list = self.kkt_psd(ua_list) # return psd
-            ra_list = self.kkt_ra(ua_list) # return ra
-            reward = self.objective_function(psd_list, ua_list)
-            if abs(prev_reward-reward) < 1e-3 or count >= 5:
-                break;
-            prev_reward = reward
+        if len(ua_list)!=1:
+            while count < num_iter:
+                count += 1
+                ra_list = self.kkt_ra(ua_list) # return ra
+                if any( ra < user.datarate for user, ra in zip(ua_list, ra_list) ):
+                    break
+                psd_list = self.kkt_psd(ua_list) # return psd
+                reward = self.objective_function(psd_list, ua_list)
+                if prev_reward-reward < 1e-3:
+                    break
+                prev_reward = reward
 
         for user, ra, psd in zip(ua_list, ra_list, psd_list):
             self.user_list[user.id].ra = ra
@@ -246,6 +251,7 @@ class TrajectoryNode:#{{{
                 return sum([math.log2(1+BANDWIDTH_ORIG*ra*user.se/user.total_data) if user.time_start <= self.current_time <= user.time_end else 0 for user, ra in zip(sorted_valid_user_list, ra_list)])
             
         def sort_key(user):
+            # TODO: user.datarate is weird: user.datarate/user.se?
             if isGBS:
                 return 1./(user.total_data/user.se_gbs + user.datarate)
             else:
@@ -339,7 +345,7 @@ class TrajectoryNode:#{{{
         # Initialize arguments of the dual function
         lambda_1 = .5
         lambda_2 = .8
-        mu_list=[0]*len(user_list)
+        mu_list=[.5]*len(user_list)
         weight_list = [0]*(2+len(mu_list))
 
 #        start = time.time()
@@ -353,11 +359,15 @@ class TrajectoryNode:#{{{
 
             # RMSPROP update rule
             grad_list = regularized_gradient(lambda_1, lambda_2, mu_list, user_list)
-            weight_list = [weight + grad_list[i]**2 for i, weight in enumerate(weight_list)]
-            lambda_1 = max(0, lambda_1 - STEP_SIZE/(weight_list[0]+EPSILON)**.5*grad_list[0])
-            lambda_2 = max(0, lambda_2 - STEP_SIZE/(weight_list[1]+EPSILON)**.5*grad_list[1])
-            mu_list = [ min(lambda_1+user_list[idx].psd*lambda_2 - .1, \
-                    max(0, mu - 1.3*STEP_SIZE/(weight_list[2+idx]+EPSILON)**.5*grad_list[2+idx])) for idx, mu in enumerate(mu_list)]
+#            weight_list = [weight + grad_list[i]**2 for i, weight in enumerate(weight_list)]
+            weight_list = [max(.2, grad_list[i]**2) for i, weight in enumerate(weight_list)]
+            lambda_1 = max(EPSILON, lambda_1 - STEP_SIZE/(weight_list[0]+EPSILON)**.5*grad_list[0])
+            # Clipping: 1e-3
+            lambda_2 = max(1e-5, lambda_2 - STEP_SIZE/(weight_list[1]+EPSILON)**.5*grad_list[1])
+#            if len(user_list) != 0:
+#                print(f'{lambda_1+user_list[0].psd*lambda_2 - .1=}')
+            mu_list = [ min(lambda_1+user_list[idx].psd*lambda_2 - 1e-8, \
+                    max(EPSILON, mu - 1.3*STEP_SIZE/(weight_list[2+idx]+EPSILON)**.5*grad_list[2+idx])) for idx, mu in enumerate(mu_list)]
 
             # Print option
 #            if count%2000==0 :
@@ -376,19 +386,11 @@ class TrajectoryNode:#{{{
 #                print("Input:", [lambda_1, lambda_2]+mu_list )
 #                print("Count:",count)
 #                print("-------------------------")
-                break;
+                break
 
+#        resource_list = [max(user.datarate/user.se, BANDWIDTH/(lambda_1+user.psd*lambda_2-mu_list[idx])-user.total_data/user.se) for idx, user in enumerate(user_list)]
+        resource_list = [BANDWIDTH/(lambda_1+user.psd*lambda_2-mu_list[idx])-user.total_data/user.se for idx, user in enumerate(user_list)]
 
-        resource_list = [max(user.datarate/user.se,BANDWIDTH/(lambda_1+user.psd*lambda_2-mu_list[idx])-user.total_data/user.se) for idx, user in enumerate(user_list)]
-#        if count > 500:
-#        print("Final values:", [lambda_1, lambda_2]+mu_list )
-#        print("Count:", count)
-#        print("Time:", time.time()-start)
-#        if abs(sum(resource_list)-1) > .1:
-#            print("Origianl resource list, sum:", f'{sum(resource_list):.2f}', resource_list)
-#        sum_resource = sum(resource_list)
-#        resource_list = [resource + (BANDWIDTH-sum_resource)/len(resource_list) for resource in resource_list]
-#        resource_list = [BANDWIDTH*resource/sum_resource for resource in resource_list]
         # Normalize the resource
         diff_list = [resource - user.datarate/user.se for resource, user in zip(resource_list,user_list)]
         sum_diff_list = sum(diff_list)
@@ -650,9 +652,9 @@ def fixed_path(user_list):
     position = [random.randint(0, MAP_WIDTH)//10*10,
                  random.randint(0, MAP_WIDTH)//10*10,
                  random.randint(MIN_ALTITUDE, MAX_ALTITUDE)//10*10]
-#    position = [MAP_WIDTH//2,
-#                 MAP_WIDTH//2,
-#                 10]
+    position = [MAP_WIDTH,
+                 MAP_WIDTH,
+                 MAX_ALTITUDE]
     # Initial grid position of UAV
     node = TrajectoryNode(position, NUM_NODE_ITER)
     # Make user list
@@ -668,16 +670,18 @@ def fixed_path(user_list):
 
 def circular_path(radius, user_list):
     path = []
-    position = [100-radius, 100, 75]
+    initial_angle = 2*math.pi*random.random()
+    x = MAP_WIDTH/2-radius*math.cos(initial_angle)
+    y = MAP_WIDTH/2-radius*math.sin(initial_angle)
     # Initial grid position of UAV
-    node = TrajectoryNode(position, NUM_NODE_ITER)
+    node = TrajectoryNode([x, y, 750], NUM_NODE_ITER)
     node.user_list = user_list
 
     path.append(node)
 
-    unit_angle = 2*math.pi/MAX_TIMESLOT
+    unit_angle = VEHICLE_VELOCITY*MAX_TIMESLOT/radius
     for time in range(1, MAX_TIMESLOT):
-        position = [100-radius*math.cos(unit_angle*time), 100-radius*math.sin(unit_angle*time), 75]
+        position = [x-radius*math.cos(unit_angle*time), y-radius*math.sin(unit_angle*time), 75]
         node = TrajectoryNode(position, NUM_NODE_ITER, parent=path[-1])
         path.append(node)
 
@@ -720,29 +724,28 @@ if __name__ =="__main__":
     TIME_STEP = 3 # s
     MAX_TIMESLOT = 20 # unit of (TIME_STEP) s
     ## Constant for map
-    MAP_WIDTH = 400 # meter, Both X and Y axis width
+    MAP_WIDTH = 600 # meter, Both X and Y axis width
     MIN_ALTITUDE = 50 # meter
     MAX_ALTITUDE = 100 # meter
     GRID_SIZE = 40 # meter
     # Constant for user
-    NUM_UE = 5
+    NUM_UE = 10
     NUM_NODE_ITER = 0
-    TIME_WINDOW_SIZE = [20, 20]
-    TIME_PERIOD_SIZE = [999, 999]
-    DATARATE_WINDOW = [5, 5] # Requiring datarate Mb/s
+    TIME_WINDOW_SIZE = [2, 2]
+    TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
+    DATARATE_WINDOW = [0, 0] # Requiring datarate Mb/s
     INITIAL_DATA = 10 # Mb
-    TREE_DEPTH = 4
+    TREE_DEPTH = 1
     MAX_DATA = 99999999
 
-    reward1 = 0
-    reward2 = 0
-    reward3 = 0
-    reward4 = 0
+    pf_proposed = 0
+    pf_circular = 0 
+    pf_fixed = 0 
+    pf_random = 0 
     num_exp = 10
 
     gbs = GroundBaseStation()
     for j in range(num_exp):
-        print(j, flush=True, end='\r')
         position = [random.randint(0, MAP_WIDTH)//10*10,
                      random.randint(0, MAP_WIDTH)//10*10,
                      random.randint(MIN_ALTITUDE, MAX_ALTITUDE)//10*10]
@@ -754,13 +757,9 @@ if __name__ =="__main__":
             tw_size = random.randint(TIME_WINDOW_SIZE[0], TIME_WINDOW_SIZE[1])
             time_period = random.randint(TIME_PERIOD_SIZE[0], TIME_PERIOD_SIZE[1])
             datarate = random.randint(DATARATE_WINDOW[0], DATARATE_WINDOW[1])
-    #        user = User(i, # id
-    #                [random.randint(0, MAP_WIDTH), random.randint(0, MAP_WIDTH)], # position
-    #                random.randint(0, time_period-tw_size), tw_size, time_period, # time window
-    #                datarate, INITIAL_DATA, MAX_DATA) # data
             user = User(i, # id
                     [random.randint(0, MAP_WIDTH), random.randint(0, MAP_WIDTH)], # position
-                    0, tw_size, time_period, # time window
+                    random.randint(0, time_period-tw_size), tw_size, time_period, # time window
                     datarate, INITIAL_DATA, MAX_DATA) # data
             user_list.append(user)
         root.user_list = user_list
@@ -771,23 +770,32 @@ if __name__ =="__main__":
                                 TREE_DEPTH, NUM_NODE_ITER, MAX_TIMESLOT, gbs)
 
         PATH1 = tree.pathfinder()
-        for leaf in PATH1:
-           reward1 += leaf.reward
+        user_list = PATH1[-1].user_list
+        tmp_pf_proposed = sum([math.log2(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
+        pf_proposed += tmp_pf_proposed
 
+        for user in user_list: 
+            user.total_data = INITIAL_DATA
         PATH2 = circular_path(100, user_list)
-        for leaf in PATH2:
-           reward2 += leaf.reward
+        user_list = PATH2[-1].user_list
+        tmp_pf_circular = sum([math.log2(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
+        pf_circular += tmp_pf_circular
 
+        for user in user_list: 
+            user.total_data = INITIAL_DATA
         PATH3 = random_path(user_list)
-        for leaf in PATH3:
-           reward3 += leaf.reward
+        user_list = PATH3[-1].user_list
+        tmp_pf_random = sum([math.log2(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
+        pf_random += tmp_pf_random
 
+        for user in user_list: 
+            user.total_data = INITIAL_DATA
         PATH4 = fixed_path(user_list)
-        for leaf in PATH4:
-           reward4 += leaf.reward
-
-
-    print(f'DFS trajectory reward: {reward1/num_exp}')
-    print(f'Circular trajectory reward: {reward2/num_exp}')
-    print(f'Random trajectory reward: {reward3/num_exp}')
-    print(f'Fixed trajectory reward: {reward4/num_exp}')
+        user_list = PATH4[-1].user_list
+        tmp_pf_fixed = sum([math.log2(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
+        pf_fixed += tmp_pf_fixed
+        print(f'Iteration: {j}, Proposed: {tmp_pf_proposed: .2f}, Circular: {tmp_pf_circular: .2f}, random: {tmp_pf_random: .2f}, fixed: {tmp_pf_fixed: .2f}')
+    print(f'DFS trajectory pf: {pf_proposed/num_exp}')
+    print(f'Circular trajectory pf: {pf_circular/num_exp}')
+    print(f'Random trajectory pf: {pf_random/num_exp}')
+    print(f'Fixed trajectory pf: {pf_fixed/num_exp}')

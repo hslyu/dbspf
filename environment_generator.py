@@ -15,18 +15,18 @@ DIRECTORY_PATH = os.path.join(os.getcwd(),'data')
 NUM_ITERATION=1000
 # Constant for UAV
 VEHICLE_VELOCITY = 15. # m/s
-TIME_STEP = 1 # s
-MAX_TIMESLOT = 60 # unit of (TIME_STEP) s
+TIME_STEP = 3 # s
+MAX_TIMESLOT = 20 # unit of (TIME_STEP) s
 ## Constant for map
-MAP_WIDTH = 400 # meter, Both X and Y axis width
+MAP_WIDTH = 600 # meter, Both X and Y axis width
 MIN_ALTITUDE = 50 # meter
 MAX_ALTITUDE = 100 # meter
-GRID_SIZE = 15 # meter
+GRID_SIZE = 40 # meter
 # Constant for user
 NUM_UE = 200
-TIME_WINDOW_SIZE = [10,10]
+TIME_WINDOW_SIZE = [2,2]
 TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
-DATARATE_WINDOW = [0,0] # Requiring datarate Mb/s
+#DATARATE_WINDOW = [0,0] # Requiring datarate Mb/s
 INITIAL_DATA = 10 # Mb
 
 def get_parser():
@@ -44,7 +44,7 @@ def get_parser():
     parser.add_argument('--num_ue', default=NUM_UE, type=int, help='Number of user')
     parser.add_argument('--time_window_size', default=TIME_WINDOW_SIZE, type=int, nargs='+', help='Time window size')
     parser.add_argument('--time_period_size', default=TIME_PERIOD_SIZE, type=int, nargs='+', help='Time period size')
-    parser.add_argument('--datarate_window', default=DATARATE_WINDOW, type=int, nargs='+', help='Datarate window')
+#    parser.add_argument('--datarate_window', default=DATARATE_WINDOW, type=int, nargs='+', help='Datarate window')
     parser.add_argument('--initial_data', default=INITIAL_DATA, type=float, help='Initial data')
     parser.add_argument('--args_filename', default='args.json', type=str, help='Name of argument json file')
     parser.add_argument('--generate_args_only', default=False, type=bool, help='Generate just arguments if true. Otherwise, the scripts generates a number of environments')
@@ -78,7 +78,8 @@ def environment_generator(parser):
             user_data['time_start'] = random.randint(0, args.max_timeslot-tw_size)
             user_data['tw_size'] = tw_size
             user_data['time_period'] = time_period
-            user_data['datarate'] = random.randint(args.datarate_window[0], args.datarate_window[1])
+#            user_data['datarate'] = random.randint(args.datarate_window[0], args.datarate_window[1])
+            user_data['datarate'] = 0
             user_data['total_data'] = args.initial_data
 #            user_data['max_data'] = random.randint(3,5)*user_data['datarate']
             user_data['max_data'] = 999999

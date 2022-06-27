@@ -21,25 +21,25 @@ class Parameters:
     # Some numbers
     num_ue: int=10
     num_subcarriers: int=10
-    num_timeslots: int=60
+    num_timeslots: int=20
     # Map
-    map_width: int=400 # meter
+    map_width: int=600 # meter
     min_altitude: int=30 # meter
     max_altitude: int=250 # meter
     # Time, velocity
-    time_duration: float=1 #s
-    uav_max_dist: float=15 #m
+    time_duration: float=3 #s
+    uav_max_dist: float=45 #m
     # Channel parameters
     pathloss_g2g_alpha: float=4
-    pathloss_a2g_a: float=9.6
-    pathloss_a2g_b: float=0.28
+    pathloss_a2g_a: float=9.64
+    pathloss_a2g_b: float=0.06
     pathloss_excessive_LoS: float=1 # dB
     pathloss_excessive_NLoS: float=40 # dB
     # Time period
-    time_window_size = 4
+    time_window_size = 2
     time_start_range = [0, num_timeslots-time_window_size]
     # Communication parameters
-    SNR_threshold: float=0
+    SNR_threshold: float=64
     noise: float=-121.45 # dBm
     ICI: float=-110 # dBm
     frequency: float=2 # GHz (Normalized)
@@ -196,9 +196,8 @@ class UAVBasestation:
             nlos_phase = (1/(param.rician_K+1))**.5 * np.random.multivariate_normal(np.zeros(2), 0.5*np.eye(2), size=1)[0]
             nlos_real = nlos_phase[0]
             nlos_im = nlos_phase[1]
-            fading = ( (los_real+nlos_real)**2 + (los_im+nlos_im)**2)*.5
+            fading = ( (los_real+nlos_real)**2 + (los_im+nlos_im)**2)**.5
             subcarrier.channel = 10*math.log10(fading) - subcarrier.pathloss
-#            print(10*math.log10(fading) - subcarrier.pathloss)
     
     def los_prob(self, pos_other: Position):
 #        if any( [isinstance(ax[1], cp.Variable) for ax in vars(self.position).items()]):
@@ -326,19 +325,23 @@ if __name__=="__main__":
                 print(f'\t\t{subcarrier.channel = } (dB)')
                 print('\t\t----------')
 
-            print('\t---------- subcarrier_GBS')
-            for subcarrier in user.list_subcarrier_GBS:
-                print(f'\t\t{subcarrier.alpha = } ')
-                print(f'\t\t{subcarrier.frequency = } (GHz)')
-                print(f'\t\t{subcarrier.power = } (dB)')
-                print(f'\t\t{subcarrier.pathloss = } (dB)')
-                print(f'\t\t{subcarrier.channel = } (dB)')
-                print('\t\t----------')
+#            print('\t---------- subcarrier_GBS')
+#            for subcarrier in user.list_subcarrier_GBS:
+#                print(f'\t\t{subcarrier.alpha = } ')
+#                print(f'\t\t{subcarrier.frequency = } (GHz)')
+#                print(f'\t\t{subcarrier.power = } (dB)')
+#                print(f'\t\t{subcarrier.pathloss = } (dB)')
+#                print(f'\t\t{subcarrier.channel = } (dB)')
+#                print('\t\t----------')
 
     param.num_ue = 2
-    param.num_subcarriers = 2
+    param.num_subcarriers = 10
 
     UBS, GBS, list_ue = initialize_network('/home/hslyu/dbspf/data/env/env_0000.json')
 #    UBS, GBS, list_ue = initialize_network()
 #    los_prob_approximation_test()
     initialization_validity_check()
+#    user = list_ue[0]
+#    print(user.list_subcarrier_UBS[0].pathloss)
+#    print(-sum([sub.channel for sub in user.list_subcarrier_UBS])/1000)
+#    print([sub.channel for sub in user.list_subcarrier_UBS])

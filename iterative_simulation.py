@@ -8,6 +8,7 @@ import argparse
 import os
 import json
 import drone_basestation as dbs
+import math
 from drone_basestation import User, TrajectoryNode
 from utils import create_dir, open_json
 
@@ -22,7 +23,7 @@ def get_parser():
     parser.add_argument('--num_user', type=int, help='Path of the environment directory')
     parser.add_argument('--index_start', default=0, type=int, help='Iteration start index')
     parser.add_argument('--index_end', type=int, help='Iteration end index')
-    parser.add_argument('--datarate_experiment', type=bool, default=False, help='Option for datarate effect simulation')
+    parser.add_argument('--datarate', type=int, default=False, help='Option for datarate effect simulation')
     return parser
 
 def load_root(path, num_user, env_index):
@@ -86,12 +87,13 @@ if __name__ =="__main__":
     # Create directory to store the result
     create_dir(main_args.result_path)
     
+    avg_obj = 0
+    avg_reward = 0
     # Load root node and start trajectory plannnig
     for env_index in range(main_args.index_start, main_args.index_end):
         root = load_root(main_args.env_path, main_args.num_user, env_index)
-        if main_args.datarate_experiment:
-            for user in root.user_list:
-                user.datarate = env_args.datarate_window[0]
+        for user in root.user_list:
+            user.datarate = main_args.datarate
         tree = dbs.TrajectoryTree(root, env_args.vehicle_velocity,
                                 env_args.time_step, env_args.grid_size,
                                 env_args.map_width, env_args.min_altitude, env_args.max_altitude,
@@ -99,8 +101,13 @@ if __name__ =="__main__":
         dbs_trajectory = tree.pathfinder()
         total_reward = 0
         total_time = 0
+        user_list = dbs_trajectory[-1].user_list
+        obj = sum([math.log2(user.total_data-env_args.initial_data) for user in user_list if user.total_data != env_args.initial_data])
+        avg_obj += obj
         for node in dbs_trajectory:
             total_reward += node.reward
             total_time += node.elapsed_time
         save_result(f'env_{env_index:04d}-depth_{main_args.tree_depth}-ue_{main_args.num_user}.json', main_args.result_path, env_args_dict, main_args, env_index, total_reward, total_time, dbs_trajectory)
         print(f'[{env_index-main_args.index_start+1}/{main_args.index_end-main_args.index_start}] Total reward: {total_reward:.2f}, Total time: {total_time}')
+        avg_reward += total_reward
+    print(f'avg_reward: {avg_reward/10}, avg_obj: {avg_obj/10}')
