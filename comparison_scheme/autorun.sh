@@ -1,13 +1,20 @@
 #!/bin/bash
 
+if [ "$#" -ne 2 ];
+then 
+	echo "usage: $0 <NUM_EXP> <START_INDEX>"
+	exit
+fi	
+
 sess="PF"
 dir="/home/hslyu/dbspf/comparison_scheme"
 
 tmux new-session -d -s "$sess" -c "$dir"
 
+NUM_SESS=10
 NUM_EXP=$1
 START=$2
-WINDOWS=$(seq 0 10)
+WINDOWS=$(seq 0 $NUM_SESS)
 for window in $WINDOWS
 do
 	if [ $window -eq 0 ]; then
