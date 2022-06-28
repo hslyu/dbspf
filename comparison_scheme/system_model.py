@@ -38,7 +38,7 @@ class Parameters:
     time_window_size = 2
     time_start_range = [0, num_timeslots-time_window_size]
     # Communication parameters
-    SNR_threshold: float=64
+    SNR_threshold: float=0
     noise: float=-121.45 # dBm
     ICI: float=-110 # dBm
     frequency: float=2 # GHz (Normalized)
