@@ -9,7 +9,6 @@ from typing import List
 import math
 import random
 import numpy as np
-from scipy.stats import rice
 
 import os
 import json
