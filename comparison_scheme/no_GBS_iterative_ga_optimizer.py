@@ -15,8 +15,8 @@ param = sm.param
 def get_parser():
     parser = argparse.ArgumentParser(description='Simulate drone base station with specific depth',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--env_path', type=str, default=os.path.join('~/dbspf/data'), help='Path of the environment directory')
-    parser.add_argument('--result_path', type=str, default=os.path.join('~/dbspf/comparison_scheme/result'), help='Path of the result directory')
+    parser.add_argument('--env_path', type=str, default='~/dbspf/data', help='Path of the environment directory')
+    parser.add_argument('--result_path', type=str, default='~/dbspf/comparison_scheme/result', help='Path of the result directory')
     parser.add_argument('--index_start', type=int, default=0, help='Iteration start index')
     parser.add_argument('--index_end', type=int, help='Iteration end index')
     parser.add_argument('--datarate', type=int, help='Datarate')
