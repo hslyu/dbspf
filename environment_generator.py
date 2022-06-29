@@ -10,7 +10,7 @@ from utils import create_dir
 import argparse
 
 # Tree constant example
-DIRECTORY_PATH = '~/dbspf/data'
+DIRECTORY_PATH = '/home/hslyu/dbspf/data'
 # Number of iteration
 NUM_ITERATION=300
 # Constant for UAV
