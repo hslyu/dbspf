@@ -20,10 +20,10 @@ do
 		continue
 	fi
 
-	if [ $window -lt 5]; then
-		tmux send-keys -t $sess:$window "python no_GBS_iterative_ga_optimizer.py --index_start $START --index_end $END --datarate 5" Enter
+	if [ $window -lt 5 ]; then
+		tmux send-keys -t $sess:$window "python no_GBS_iterative_ga_optimizer.py --index_start $START --index_end $END --datarate 5 --result_path result/datarate_5" Enter
 	else
-		tmux send-keys -t $sess:$window "python no_GBS_iterative_ga_optimizer.py --index_start $START --index_end $END --datarate 10" Enter
+		tmux send-keys -t $sess:$window "python no_GBS_iterative_ga_optimizer.py --index_start $START --index_end $END --datarate 10 --result_path result/datarate_5" Enter
 	fi
 	START=$END
 done
