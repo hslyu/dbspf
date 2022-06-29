@@ -11,8 +11,8 @@ FREQUENCY = 2.0*1e9 # Hz
 LIGHTSPEED = 3*1e8 # m/s
 #SURROUNDING_A = 11.95 # Envrionmental parameter for probablistic LOS link
 #SURROUNDING_B = 0.136 # Envrionmental parameter for probablistic LOS link
-SURROUNDING_A = 9.64 # Envrionmental parameter for probablistic LOS link
-SURROUNDING_B = 0.06 # Envrionmental parameter for probablistic LOS link
+SURROUNDING_A = 9.61 # Envrionmental parameter for probablistic LOS link
+SURROUNDING_B = 0.16 # Envrionmental parameter for probablistic LOS link
 #LOS_EXCESSIVE = 2.3 # dB, excessive pathloss of los link
 #NLOS_EXCESSIVE = 34 # dB, excessive pathloss of nlos link
 LOS_EXCESSIVE = 1 # dB, excessive pathloss of los link
@@ -49,9 +49,9 @@ def snr2se(snr):
 if __name__ =="__main__":
 #    (get_pathloss(300,100))
 #    (get_pathloss(50,50))
-    print(f'LoS Prob= {get_los_prob(150, 50):.4f}, {get_pathloss(150,50)=:.4f}, snr={psd2snr(get_pathloss(150,50)):.4f}, se={snr2se(psd2snr(get_pathloss(150,50))):.4f}')
-    print(f'LoS Prob= {get_los_prob(100, 50):.4f}, {get_pathloss(100,50)=:.4f}, snr={psd2snr(get_pathloss(100,50)):.4f}, se={snr2se(psd2snr(get_pathloss(100,50))):.4f}')
-    print(f'LoS Prob= {get_los_prob(50, 50):.4f}, {get_pathloss(50,50)=:.4f}, snr={psd2snr(get_pathloss(50,50)):.4f}, se={snr2se(psd2snr(get_pathloss(50,50))):.4f}')
+    print(f'LoS Prob= {get_los_prob(200, 100):.4f}, {get_pathloss(150,50)=:.4f}, snr={psd2snr(get_pathloss(150,50)):.4f}, se={snr2se(psd2snr(get_pathloss(150,50))):.4f}')
+    print(f'LoS Prob= {get_los_prob(150, 100):.4f}, {get_pathloss(100,50)=:.4f}, snr={psd2snr(get_pathloss(100,50)):.4f}, se={snr2se(psd2snr(get_pathloss(100,50))):.4f}')
+    print(f'LoS Prob= {get_los_prob(100, 100):.4f}, {get_pathloss(50,50)=:.4f}, snr={psd2snr(get_pathloss(50,50)):.4f}, se={snr2se(psd2snr(get_pathloss(50,50))):.4f}')
 #    print(f'{get_pathloss(50,50)=}')
 #    print(f'{psd2snr(get_pathloss(150,50))=}')
 #    print(f'{psd2snr(get_pathloss(50,50))=}')

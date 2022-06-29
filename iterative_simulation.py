@@ -108,6 +108,7 @@ if __name__ =="__main__":
             total_reward += node.reward
             total_time += node.elapsed_time
         save_result(f'env_{env_index:04d}-depth_{main_args.tree_depth}-ue_{main_args.num_user}.json', main_args.result_path, env_args_dict, main_args, env_index, total_reward, total_time, dbs_trajectory)
-        print(f'[{env_index-main_args.index_start+1}/{main_args.index_end-main_args.index_start}] Total reward: {total_reward:.2f}, Total time: {total_time}')
+#        print(f'[{env_index-main_args.index_start+1}/{main_args.index_end-main_args.index_start}] Total reward: {total_reward:.2f}, Total time: {total_time}')
         avg_reward += total_reward
-    print(f'avg_reward: {avg_reward/10}, avg_obj: {avg_obj/10}')
+    num_exp = main_args.index_end-main_args.index_start
+    print(f'Depth: {main_args.tree_depth}, #users: {main_args.num_user}, datarate: {main_args.datarate}, avg_reward: {avg_reward/num_exp}, avg_obj: {avg_obj/num_exp}')

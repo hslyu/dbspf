@@ -19,6 +19,7 @@ def get_parser():
     parser.add_argument('--result_path', type=str, default=os.path.join(os.getcwd(), 'result'), help='Path of the result directory')
     parser.add_argument('--index_start', type=int, default=0, help='Iteration start index')
     parser.add_argument('--index_end', type=int, help='Iteration end index')
+    parser.add_argument('--datarate', type=int, help='Datarate')
     return parser
 
 def get_valid_user(user_list: list[sm.Device], time_index):
@@ -169,6 +170,7 @@ def callback_generation(ga_instance):
 
 parser = get_parser()
 args = parser.parse_args()
+param.SNR_threshold = 2**(args.datarate/(param.subcarrier_bandwidth*10))-1
 
 ue_alpha_bound   = {'low' : 0,'high' : param.num_ue + 1} # int
 ue_power_bound   = {'low' : 0,'high' : 10 + 1} # int, The number 0 and 100 are not power bounds. It is softmax ratio
