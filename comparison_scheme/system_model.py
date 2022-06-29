@@ -18,7 +18,7 @@ import pickle
 @dataclass
 class Parameters:
     # Some numbers
-    num_ue: int=10
+    num_ue: int=20
     num_subcarriers: int=10
     num_timeslots: int=20
     # Map
