@@ -10,9 +10,9 @@ from utils import create_dir
 import argparse
 
 # Tree constant example
-DIRECTORY_PATH = os.path.join(os.getcwd(),'data')
+DIRECTORY_PATH = '~/dbspf/data'
 # Number of iteration
-NUM_ITERATION=1000
+NUM_ITERATION=300
 # Constant for UAV
 VEHICLE_VELOCITY = 15. # m/s
 TIME_STEP = 3 # s
