@@ -201,8 +201,8 @@ class UAVBasestation:
 #            nlos_im = (1 - los_real**2)**.5
 #            nlos_real *= (1/(param.rician_K+1))**.5
 #            nlos_im *= (1/(param.rician_K+1))**.5
-            nlos_real = random.random() * 0.2839809171235324
-            nlos_im = (0.2839809171235324 - nlos_real**2)**.5
+            nlos_real = random.gauss(0, .5) * 0.2839809171235324 
+            nlos_im = random.gauss(0, .5) * 0.2839809171235324
             fading = ( (los_real+nlos_real)**2 + (los_im+nlos_im)**2)**.5
             subcarrier.channel = 10*math.log10(fading) - subcarrier.pathloss
     
