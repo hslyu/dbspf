@@ -202,9 +202,9 @@ for i in range(idx_start, idx_end):#{{{
     UBS, GBS, list_ue = sm.initialize_network(os.path.join(args.env_path, f'env/{envname}.json'))
     #UBS, GBS, list_ue = sm.initialize_network()
 
-    start = time.time()
     global time_index 
     for time_index in range(param.num_timeslots):#{{{
+        start = time.time()
         if get_valid_user(list_ue, time_index) == []:
             continue
 
@@ -254,14 +254,11 @@ for i in range(idx_start, idx_end):#{{{
         UBS.save(f'{dirname}/UBS_{time_index}.pkl')
 
         current_obj = sum([math.log2(ue.serviced_data-10) for ue in list_ue if ue.serviced_data != 10])
-        if i == 0:
-            print(f'Current episode: {i}, time: {time_index}, reward: {solution_fitness:.4f}, current obj: {current_obj: .4f}, avg. obj: {avg_obj:.4f}, avg. elapsed time: {avg_time:.4f}')
-        else:
-            print(f'Current episode: {i}, time: {time_index}, reward: {solution_fitness:.4f}, current obj: {current_obj/i: .4f},, avg. obj: {avg_obj/i:.4f}, avg. elapsed time: {avg_time/i:.4f}')
+        print(f'Current episode: {i}, time: {time_index}, elapsed time: {time.time()-start:.1f}, current obj: {current_obj: .4f}')
+        avg_time += time.time()-start
 
-    avg_time += time.time()-start
     avg_obj += sum([math.log2(ue.serviced_data-10) for ue in list_ue if ue.serviced_data != 10])#}}}
 
 avg_time /= idx_end-idx_start
 avg_obj /= idx_end-idx_start
-print(f'{avg_time = }, {avg_obj = }')
+print(f'Average elapsed time: {avg_time}, average PF: {avg_obj:.4f}')
