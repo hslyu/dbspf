@@ -187,7 +187,7 @@ gene_type.append(int)
 
 num_generations = 10000 # Number of generations.
 num_parents_mating = 10 # Number of solutions to be selected as parents in the mating pool.
-sol_per_pop = 40 # Number of solutions in the population.
+sol_per_pop = 80 # Number of solutions in the population.
 #           subcarrier allocation          power allocation             theta pi radius
 num_genes = param.num_subcarriers + param.num_ue * param.num_subcarriers + 1 + 1 + 1
 
