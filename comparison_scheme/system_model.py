@@ -161,18 +161,21 @@ class UAVBasestation:
         log=math.log10
 
         if isinstance(user, Device):
-            los_prob = self.los_prob(user.position)
+            los_prob, distance = self.los_prob(user.position)
             user.los_prob = los_prob
             list_subcarrier = user.list_subcarrier_UBS
-        elif isinstance(user, GroundBasestation):
-            los_prob = self.los_prob(user.position)
+        else: #isinstance(user, GroundBasestation)
+            los_prob, distance = self.los_prob(user.position)
             self.gbs_los_prob = los_prob
             list_subcarrier = self.list_subcarrier
 
         for subcarrier in list_subcarrier:
             # fspl: Free space propagation loss
-            fspl = 20 * log(4 * math.pi * subcarrier.frequency / param.lightspeed) \
-                     + 20 * log(self.position.l2_norm(user.position))
+#            fspl = 20 * log(4 * math.pi * subcarrier.frequency / param.lightspeed) \
+#                     + 20 * log(self.position.l2_norm(user.position))
+
+            # This is fast version of the above two lines.
+            fspl = 20 * ( log(41.88790204786391 * subcarrier.frequency * distance) )
 
 #            avg_excessive_loss = user.los_prob * param.pathloss_excessive_LoS + \
 #                                (1 - user.los_prob) * param.pathloss_excessive_NLoS
@@ -188,25 +191,36 @@ class UAVBasestation:
         """
         list_subcarrier = user.list_subcarrier_UBS if isinstance(user, Device) else self.list_subcarrier
         for subcarrier in list_subcarrier:
-            los_real = np.random.uniform(low=0.0, high=1.0)
-            los_im = (1-los_real**2)**.5
-            los_real *= (param.rician_K/(param.rician_K+1))**.5
-            los_im *= (param.rician_K/(param.rician_K+1))**.5
-            nlos_phase = (1/(param.rician_K+1))**.5 * np.random.multivariate_normal(np.zeros(2), 0.5*np.eye(2), size=1)[0]
-            nlos_real = nlos_phase[0]
-            nlos_im = nlos_phase[1]
+#            los_real = random.random() 
+#            los_im = (1-los_real**2)**.5
+#            los_real *= (param.rician_K/(param.rician_K+1))**.5
+#            los_im *= (param.rician_K/(param.rician_K+1))**.5
+            los_real = random.random() * 0.9588299321097967
+            los_im = (0.9588299321097967 - los_real**2)**.5
+#            nlos_real = random.random()
+#            nlos_im = (1 - los_real**2)**.5
+#            nlos_real *= (1/(param.rician_K+1))**.5
+#            nlos_im *= (1/(param.rician_K+1))**.5
+            nlos_real = random.random() * 0.2839809171235324
+            nlos_im = (0.2839809171235324 - nlos_real**2)**.5
             fading = ( (los_real+nlos_real)**2 + (los_im+nlos_im)**2)**.5
             subcarrier.channel = 10*math.log10(fading) - subcarrier.pathloss
     
-    def los_prob(self, pos_other: Position):
+#    def los_prob(self, pos_other: Position):
 #        if any( [isinstance(ax[1], cp.Variable) for ax in vars(self.position).items()]):
 #            print("self.position must be real value, not variable.")
 #            print("If you want to put cp.Variable at los_prob, please use approx_los_prob.")
 
-        a = param.pathloss_a2g_a
-        b = param.pathloss_a2g_b
+#        a = param.pathloss_a2g_a
+#        b = param.pathloss_a2g_b
+#
+#        return 1 / (1 + a * math.exp( -b * (180 / math.pi * math.asin( (self.position.z - pos_other.z) / self.position.l2_norm(pos_other)) - a)))
 
-        return 1 / (1 + a * math.exp( -b * (180 / math.pi * math.asin( (self.position.z - pos_other.z) / self.position.l2_norm(pos_other)) - a)))
+    def los_prob(self, pos_other: Position):
+        # this is a fast version of the above code lines
+        distance = self.position.l2_norm(pos_other)
+                                                                                    # 180/math.pi
+        return 1 / (1 + param.pathloss_a2g_a * math.exp( -param.pathloss_a2g_b * (57.29577951308232 * math.asin( (self.position.z - pos_other.z) / distance) - param.pathloss_a2g_a))), distance
 
     def approx_los_prob(self, pos_other: Position):
 
@@ -245,8 +259,9 @@ def initialize_users(path: str=None):
             # Make default subcarrier
             for user_dict in user_dict_list[0:param.num_ue]:
                 position = Position(*user_dict['position'], 0)
-                list_subcarrier_UBS = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
-                list_subcarrier_GBS = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
+                # 2e-4 step: 200 kHz
+                list_subcarrier_UBS = [Subcarrier(param.frequency + 2e-4 * i) for i in range(param.num_subcarriers)]
+                list_subcarrier_GBS = [Subcarrier(param.frequency + 2e-4 * i) for i in range(param.num_subcarriers)]
                 ue = Device(user_dict['id'], position, 
                         list_subcarrier_UBS, list_subcarrier_GBS, 0, 
                         user_dict['time_start'], user_dict['tw_size'])
@@ -269,7 +284,7 @@ def initialize_network(path: str=None):
             position = prev_position
         list_ue = initialize_users(path)
 
-    list_subcarrier = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
+    list_subcarrier = [Subcarrier(param.frequency + 2e-4 * i) for i in range(param.num_subcarriers)]
     GBS = GroundBasestation(Position(param.map_width/2, param.map_width/2, 10), list_ue)
     UBS = UAVBasestation(prev_position, position, list_ue, list_subcarrier, GBS = GBS)
     UBS.calc_pathloss()
@@ -339,8 +354,8 @@ if __name__=="__main__":
     UBS, GBS, list_ue = initialize_network('/home/hslyu/dbspf/data/env/env_0000.json')
 #    UBS, GBS, list_ue = initialize_network()
 #    los_prob_approximation_test()
-    initialization_validity_check()
-#    user = list_ue[0]
+#    initialization_validity_check()
+    user = list_ue[0]
 #    print(user.list_subcarrier_UBS[0].pathloss)
-#    print(-sum([sub.channel for sub in user.list_subcarrier_UBS])/1000)
+    print(-sum([sub.channel for sub in user.list_subcarrier_UBS])/1000)
 #    print([sub.channel for sub in user.list_subcarrier_UBS])

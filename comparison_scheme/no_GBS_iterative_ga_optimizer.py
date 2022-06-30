@@ -91,8 +91,8 @@ def decode_gene(X):
     list_ue_power = list_ue_power_encoded/sum(list_ue_power_encoded.flatten()) * param.max_ue_power_mW if sum(list_ue_power_encoded.flatten()) !=0 else list_ue_power_encoded
 #    list_ue_power = np.apply_along_axis(proportion_array, 1, list_ue_power_encoded) * param.max_ue_power_mW
 
-    theta = math.radians(X[b] * 10)
-    pi = math.radians(X[b + 1] * 10)
+    theta = math.radians(X[b])
+    pi = math.radians(X[b + 1])
     radius = X[b + 2]
     position_x = UBS.prev_position.x + radius * math.sin(theta) * math.cos(pi)
     position_y = UBS.prev_position.y + radius * math.sin(theta) * math.sin(pi)
@@ -101,15 +101,13 @@ def decode_gene(X):
     return list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z
 
 
-def sol2rate(solution, mode_penalty=True):
+def sol2rate(solution):
     """
     Args:
         solution (list): Array of genes
     Returns:
         rate_list (list[float]): list of sumrate for users
     """
-
-    penalty = 0
 
     # split vector
     # list_ue_mode - size : param.num_ue
@@ -119,9 +117,6 @@ def sol2rate(solution, mode_penalty=True):
     list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z = decode_gene(solution)
 
     UBS.position = sm.Position(position_x, position_y, position_z)
-    # eq (35e) penality function
-    if UBS.position.l2_norm(UBS.prev_position) > param.uav_max_dist:
-        penalty += 10 * UBS.position.l2_norm(UBS.prev_position)
 
     UBS.calc_pathloss() 
     UBS.calc_channel() 
@@ -137,27 +132,20 @@ def sol2rate(solution, mode_penalty=True):
                 power_ue_UBS = list_ue_power[i, j] * dB2orig(subcarrier.channel)
                 snr = power_ue_UBS / dB2orig(param.noise)
                 # eq (35h) penalty function : QoS of ue - UBS and UBS - GBS link
-#                print('')
                 if snr < param.SNR_threshold:
                     continue
-#                else:
-#                    print(snr)
                 carrier_rate += param.subcarrier_bandwidth*math.log2(1 + snr) / 2 # Datarate of k-th subcarrier for i-th user
                 sumrate += carrier_rate
 
         list_rate.append(sumrate)
 
-    if mode_penalty:
-        return list_rate, penalty
-    else:
-        return list_rate
-
+    return list_rate
 
 def fitness_func(solution, solution_idx):
-    list_rate, penalty = sol2rate(solution)
+    list_rate = sol2rate(solution)
     pf = sum([ rate / ue.serviced_data for rate, ue in zip(list_rate, list_ue)])
             
-    return pf - penalty
+    return pf
 
 
 def callback_generation(ga_instance):
@@ -174,10 +162,10 @@ param.SNR_threshold = 2**(args.datarate/(param.subcarrier_bandwidth*10))-1
 
 ue_alpha_bound   = {'low' : 0,'high' : param.num_ue + 1} # int
 ue_power_bound   = {'low' : 0,'high' : 10 + 1} # int, The number 0 and 100 are not power bounds. It is softmax ratio
-theta_bound      = {'low' : 0,'high' : 36} # int
-pi_bound         = {'low' : 0,'high' : 36} # int
+theta_bound      = {'low' : 0,'high' : 340, 'step': 20} # int
+pi_bound         = {'low' : 0,'high' : 340, 'step': 20} # int
 #radius_bound     = {'low' : 0,'high' : param.uav_max_dist + 1e-8, 'step' : 1} # real
-radius_bound     = {'low' : 0,'high' : param.uav_max_dist} # int
+radius_bound     = {'low' : 0,'high' : param.uav_max_dist, 'step':5} # int
 
 gene_space = []
 gene_type = []
@@ -197,9 +185,9 @@ gene_type.append(int)
 gene_space.append(radius_bound)
 gene_type.append(int)
 
-num_generations = 8000 # Number of generations.
+num_generations = 10000 # Number of generations.
 num_parents_mating = 10 # Number of solutions to be selected as parents in the mating pool.
-sol_per_pop = 80 # Number of solutions in the population.
+sol_per_pop = 40 # Number of solutions in the population.
 #           subcarrier allocation          power allocation             theta pi radius
 num_genes = param.num_subcarriers + param.num_ue * param.num_subcarriers + 1 + 1 + 1
 
@@ -252,7 +240,7 @@ for i in range(idx_start, idx_end):#{{{
 
         # Applying solution to system model
         list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z = decode_gene(solution)
-        list_rate = sol2rate(solution, False)
+        list_rate = sol2rate(solution)
 
         for rate, ue in zip(list_rate, list_ue):
             ue.serviced_data += rate
