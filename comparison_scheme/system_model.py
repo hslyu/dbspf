@@ -175,11 +175,12 @@ class UAVBasestation:
 #                     + 20 * log(self.position.l2_norm(user.position))
 
             # This is fast version of the above two lines.
-            fspl = 20 * ( log(41.88790204786391 * subcarrier.frequency * distance) )
+            fspl = 20 * log(41.88790204786391 * subcarrier.frequency * distance)
 
 #            avg_excessive_loss = user.los_prob * param.pathloss_excessive_LoS + \
 #                                (1 - user.los_prob) * param.pathloss_excessive_NLoS
-            avg_excessive_loss = param.pathloss_excessive_NLoS + (param.pathloss_excessive_LoS - param.pathloss_excessive_NLoS) * los_prob
+#            avg_excessive_loss = param.pathloss_excessive_NLoS + (param.pathloss_excessive_LoS - param.pathloss_excessive_NLoS) * los_prob
+            avg_excessive_loss = param.pathloss_excessive_NLoS - 39 * los_prob
 
             subcarrier.pathloss = fspl + avg_excessive_loss
         return
