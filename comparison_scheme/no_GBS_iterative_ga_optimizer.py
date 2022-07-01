@@ -97,7 +97,7 @@ def decode_gene(X):
     position_y = UBS.prev_position.y + radius * math.sin(theta) * math.sin(pi)
     position_z = UBS.prev_position.z + radius * math.cos(pi)
 
-    return list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z, valid_user_list
+    return list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z
 
 
 def sol2rate(solution):
@@ -113,7 +113,7 @@ def sol2rate(solution):
     # list_ue_{alpha, power} - size : param.num_ue * param.num_subcarriers
     # list_UBS_power - size : param.num_subcarriers
     # position_{x,y,z} - size : 1
-    list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z, valid_user_list = decode_gene(solution)
+    list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z = decode_gene(solution)
 
     UBS.position = sm.Position(position_x, position_y, position_z)
 
@@ -121,18 +121,20 @@ def sol2rate(solution):
     UBS.calc_channel() 
 
     list_rate = []
-    for i, user in enumerate(valid_user_list):
+    for i, user in enumerate(get_valid_user(list_ue, time_index)):
         # Find sum-rate 
         sumrate = 0
         for j, subcarrier in enumerate(user.list_subcarrier_UBS):
             if list_ue_UBS_alpha[i,j] == 1:
+                carrier_rate = 0
                 # R^k_{n,R} in paper. eq (31)
                 power_ue_UBS = list_ue_power[i, j] * dB2orig(subcarrier.channel)
                 snr = power_ue_UBS / dB2orig(param.noise)
                 # eq (35h) penalty function : QoS of ue - UBS and UBS - GBS link
                 if snr < param.SNR_threshold:
                     continue
-                sumrate += param.subcarrier_bandwidth*math.log2(1 + snr) / 2 # Datarate of k-th subcarrier for i-th user
+                carrier_rate += param.subcarrier_bandwidth*math.log2(1 + snr) / 2 # Datarate of k-th subcarrier for i-th user
+                sumrate += carrier_rate
 
         list_rate.append(sumrate)
 
@@ -144,6 +146,7 @@ def fitness_func(solution, solution_idx):
             
     return pf
 
+
 def callback_generation(ga_instance):
     global last_fitness
     Generation = ga_instance.generations_completed
@@ -154,7 +157,7 @@ def callback_generation(ga_instance):
 
 parser = get_parser()
 args = parser.parse_args()
-#param.SNR_threshold = 2**(args.datarate/(param.subcarrier_bandwidth*10))-1
+param.SNR_threshold = 2**(args.datarate/(param.subcarrier_bandwidth*10))-1
 
 ue_alpha_bound   = {'low' : 0,'high' : param.num_ue + 1} # int
 ue_power_bound   = {'low' : 0,'high' : 10 + 1} # int, The number 0 and 100 are not power bounds. It is softmax ratio
@@ -206,6 +209,7 @@ for i in range(idx_start, idx_end):#{{{
 
         #           subcarrier allocation          power allocation             theta pi radius
         num_genes = param.num_subcarriers + len(valid_user_list) * param.num_subcarriers + 1 + 1 + 1
+        print(f"{num_genes = }")
 
         last_fitness = 0
 
@@ -219,7 +223,7 @@ for i in range(idx_start, idx_end):#{{{
                                crossover_type = 'single_point',
                                gene_type = copy.deepcopy(gene_type),
                                gene_space = gene_space,
-                               stop_criteria = ["saturate_20"]
+                               stop_criteria = ["saturate_1000"]
                                )
         
         # Running the GA to optimize the parameters of the function.
@@ -238,11 +242,10 @@ for i in range(idx_start, idx_end):#{{{
 #            print("Best fitness value reached after {best_solution_generation} generations.".format(best_solution_generation=ga_instance.best_solution_generation))
 
         # Applying solution to system model
-        list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z, valid_user_list = decode_gene(solution)
+        list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z = decode_gene(solution)
         list_rate = sol2rate(solution)
-        print(f'{valid_user_list = },\n {list_ue_UBS_alpha=},\n {list_ue_power=}')
 
-        for rate, ue in zip(list_rate, valid_user_list):
+        for rate, ue in zip(list_rate, list_ue):
             ue.serviced_data += rate
 
         UBS.prev_position = UBS.position
@@ -254,7 +257,7 @@ for i in range(idx_start, idx_end):#{{{
         UBS.save(f'{dirname}/UBS_{time_index}.pkl')
 
         current_obj = sum([math.log2(ue.serviced_data-10) for ue in list_ue if ue.serviced_data != 10])
-        print(f'Current episode: {i}, time: {time_index}, elapsed time: {time.time()-start:.3f}, current obj: {current_obj: .4f}')
+        print(f'Current episode: {i}, time: {time_index}, elapsed time: {time.time()-start:.1f}, current obj: {current_obj: .4f}')
         avg_time += time.time()-start
 
     avg_obj += sum([math.log2(ue.serviced_data-10) for ue in list_ue if ue.serviced_data != 10])#}}}

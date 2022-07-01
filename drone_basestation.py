@@ -157,7 +157,7 @@ class TrajectoryNode:#{{{
         Caculate pathloss --> snr --> spectral efficiency
         """
         distance = self.distance_from_leaf(position, user)
-        angle = math.asin(position[2]/distance)
+        angle = math.pi/2 - math.acos(position[2]/distance)
         los_prob = 1/(1 + SURROUNDING_A * \
                 math.exp(-SURROUNDING_B*(180/math.pi*angle - SURROUNDING_A)))
         pathloss = 20*math.log10(4*math.pi*FREQUENCY*distance/LIGHTSPEED) + los_prob*LOS_EXCESSIVE + \
@@ -166,14 +166,13 @@ class TrajectoryNode:#{{{
 
     def psd2snr(self, psd, pathloss):
         """ 
-        Because unit of psd is 200mW/2MHz, we should convert it to mw/Hz
+        Because unit of psd is 200mW/20MHz, we should convert it to mw/Hz
         """
         
         if psd == 0:
             return 0
         else:
-                                        # 200mw/2MHz = 1e-4 mw/Hz
-            return 10*math.log10(psd) - 40 - pathloss - NOISE_DENSITY
+            return 10*math.log10(1.5*psd) - 50 - pathloss - NOISE_DENSITY
 
     def snr2se(self, snr):
         """
