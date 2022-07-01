@@ -175,11 +175,10 @@ class UAVBasestation:
 #                     + 20 * log(self.position.l2_norm(user.position))
 
             # This is fast version of the above two lines.
-            fspl = 20 * ( log(41.88790204786391 * subcarrier.frequency * distance) )
+            fspl = 20 * log(41.88790204786391 * subcarrier.frequency * distance)
 
-#            avg_excessive_loss = user.los_prob * param.pathloss_excessive_LoS + \
-#                                (1 - user.los_prob) * param.pathloss_excessive_NLoS
-            avg_excessive_loss = param.pathloss_excessive_NLoS + (param.pathloss_excessive_LoS - param.pathloss_excessive_NLoS) * los_prob
+#            avg_excessive_loss = param.pathloss_excessive_NLoS + (param.pathloss_excessive_LoS - param.pathloss_excessive_NLoS) * los_prob
+            avg_excessive_loss = param.pathloss_excessive_NLoS - 39 * los_prob
 
             subcarrier.pathloss = fspl + avg_excessive_loss
         return
@@ -207,14 +206,14 @@ class UAVBasestation:
             subcarrier.channel = 10*math.log10(fading) - subcarrier.pathloss
     
 #    def los_prob(self, pos_other: Position):
-#        if any( [isinstance(ax[1], cp.Variable) for ax in vars(self.position).items()]):
-#            print("self.position must be real value, not variable.")
-#            print("If you want to put cp.Variable at los_prob, please use approx_los_prob.")
-
+##        if any( [isinstance(ax[1], cp.Variable) for ax in vars(self.position).items()]):
+##            print("self.position must be real value, not variable.")
+##            print("If you want to put cp.Variable at los_prob, please use approx_los_prob.")
+#
 #        a = param.pathloss_a2g_a
 #        b = param.pathloss_a2g_b
 #
-#        return 1 / (1 + a * math.exp( -b * (180 / math.pi * math.asin( (self.position.z - pos_other.z) / self.position.l2_norm(pos_other)) - a)))
+#        return 1 / (1 + a * math.exp( -b * (180 / math.pi * math.asin( (self.position.z - pos_other.z) / self.position.l2_norm(pos_other)) - a))), 
 
     def los_prob(self, pos_other: Position):
         # this is a fast version of the above code lines
@@ -310,19 +309,19 @@ if __name__=="__main__":
 #        log = lambda x: cp.log(x) / cp.log(10) if cvx_mode else math.log10
         log = math.log10
 
-        print("----UAV status----")
-        print(f'{UBS.position = }')
-        print(f'{UBS.prev_position = }')
-        print(f'{UBS.gbs_los_prob = }')
-        for subcarrier in UBS.list_subcarrier:
-            print(f'\t\t{subcarrier.frequency = } (GHz)')
-            print(f'\t\t{subcarrier.power = } (dB)')
-            print(f'\t\t{subcarrier.pathloss = } (dB)')
-            print(f'\t\t{subcarrier.channel = } (dB)')
-            print('\t\t----------')
+#        print("----UAV status----")
+#        print(f'{UBS.position = }')
+#        print(f'{UBS.prev_position = }')
+#        print(f'{UBS.gbs_los_prob = }')
+#        for subcarrier in UBS.list_subcarrier:
+#            print(f'\t\t{subcarrier.frequency = } (GHz)')
+#            print(f'\t\t{subcarrier.power = } (dB)')
+#            print(f'\t\t{subcarrier.pathloss = } (dB)')
+#            print(f'\t\t{subcarrier.channel = } (dB)')
+#            print('\t\t----------')
 
-        print("----GBS status----")
-        print(f'{GBS.position = }')
+#        print("----GBS status----")
+#        print(f'{GBS.position = }')
 
         print("----User status----")
         for user in list_ue: 
@@ -338,6 +337,7 @@ if __name__=="__main__":
                 print(f'\t\t{subcarrier.pathloss = } (dB)')
                 print(f'\t\t{subcarrier.channel = } (dB)')
                 print('\t\t----------')
+            break
 
 #            print('\t---------- subcarrier_GBS')
 #            for subcarrier in user.list_subcarrier_GBS:
@@ -348,14 +348,11 @@ if __name__=="__main__":
 #                print(f'\t\t{subcarrier.channel = } (dB)')
 #                print('\t\t----------')
 
-    param.num_ue = 2
-    param.num_subcarriers = 10
-
     UBS, GBS, list_ue = initialize_network('/home/hslyu/dbspf/data/env/env_0000.json')
 #    UBS, GBS, list_ue = initialize_network()
 #    los_prob_approximation_test()
 #    initialization_validity_check()
-    user = list_ue[0]
 #    print(user.list_subcarrier_UBS[0].pathloss)
-    print(-sum([sub.channel for sub in user.list_subcarrier_UBS])/1000)
+    print(UBS.position)
+    print(sum([ -sum([sub.channel for sub in user.list_subcarrier_UBS])/10 for user in list_ue ])/len(list_ue))
 #    print([sub.channel for sub in user.list_subcarrier_UBS])
