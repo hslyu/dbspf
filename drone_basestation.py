@@ -11,10 +11,11 @@ from dataclasses import dataclass
 # Constant for wirless communication{{{
 FREQUENCY = 2.0*1e9 # Hz
 LIGHTSPEED = 3*1e8 # m/s
-BANDWIDTH_ORIG = 1.8 # To make scalable
+BANDWIDTH_ORIG = 1.8e6 # Hz
+POWER_ORIG = 200 # mW
 BANDWIDTH = 1. # 20 MHz per unit
 POWER = 1. # 200 mW per unit
-NOISE_DENSITY = -174 # dBm/20MHz , noise spectral density(Johnson-Nyquist_noise)
+NOISE_DENSITY = -174 # noise spectral density(Johnson-Nyquist_noise)
 LOS_EXCESSIVE = 1 # dB, excessive pathloss of los link
 NLOS_EXCESSIVE = 40 # dB, excessive pathloss of nlos link
 #LOS_EXCESSIVE = 1 # dB, excessive pathloss of los link
@@ -166,13 +167,13 @@ class TrajectoryNode:#{{{
 
     def psd2snr(self, psd, pathloss):
         """ 
-        Because unit of psd is 200mW/20MHz, we should convert it to mw/Hz
+        Because unit of psd is 200mW/2MHz, we should convert it to mw/Hz
         """
         
         if psd == 0:
             return 0
         else:
-            return 10*math.log10(1.5*psd) - 50 - pathloss - NOISE_DENSITY
+            return 10*math.log10(psd) + 10*math.log10(POWER_ORIG/BANDWIDTH_ORIG) - pathloss - NOISE_DENSITY
 
     def snr2se(self, snr):
         """
