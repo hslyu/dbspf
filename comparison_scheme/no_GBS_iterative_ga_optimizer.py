@@ -254,7 +254,7 @@ for i in range(idx_start, idx_end):#{{{
         UBS.save(f'{dirname}/UBS_{time_index}.pkl')
 
         current_obj = sum([math.log2(ue.serviced_data-10) for ue in list_ue if ue.serviced_data != 10])
-        print(f'Current episode: {i}, time: {time_index}, elapsed time: {time.time()-start:.1f}, current obj: {current_obj: .4f}')
+        print(f'Current episode: {i}, time: {time_index}, elapsed time: {time.time()-start:.3f}, current obj: {current_obj: .4f}')
         avg_time += time.time()-start
 
     avg_obj += sum([math.log2(ue.serviced_data-10) for ue in list_ue if ue.serviced_data != 10])#}}}
