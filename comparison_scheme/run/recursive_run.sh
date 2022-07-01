@@ -15,12 +15,13 @@ DATARATE=$3
 NUM_SESS=10
 WINDOWS=$(seq 0 $NUM_SESS)
 
+dir="~/dbspf/comparison_scheme"
 for window in $WINDOWS
 do
 	if [ $window -eq 0 ]; then
 		continue
 	fi
 	END=`expr $START + $NUM_EXP`
-	tmux send-keys -t $sess:$window "python no_GBS_iterative_ga_optimizer.py --index_start $START --index_end $END --datarate $DATARATE" Enter
+	tmux send-keys -t $sess:$window "python $dir/no_GBS_iterative_ga_optimizer.py --index_start $START --index_end $END --datarate $DATARATE" Enter
 	START=$END
 done
