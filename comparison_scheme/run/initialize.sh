@@ -1,12 +1,12 @@
 #!/bin/bash
 
-if [ "$#" -ne 0 ];
+if [ "$#" -ne 1 ];
 then 
-	echo "usage: just run the code"
+	echo "usage: $0 <session name>"
 	exit
 fi	
 
-sess="PF"
+sess=$1
 dir="/home/hslyu/dbspf/comparison_scheme"
 
 tmux new-session -d -s "$sess" -c "$dir"
