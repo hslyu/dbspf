@@ -28,7 +28,7 @@ for datarate in $(seq 0 4)
 do
 	for depth in $(seq 1 8)
 	do
-		result_dir="./result/datarate_$datarate/result-depth_$depth-user_$num_user"
+		result_dir="~/dbspf/result/datarate_$datarate/user_$num_user/depth_$depth"
 		read test <<< $(python iterative_simulation.py -t $depth --index_start $START --index_end $END --num_user $num_user --datarate $datarate --result_path $result_dir)
 		echo "$test"
 	done
