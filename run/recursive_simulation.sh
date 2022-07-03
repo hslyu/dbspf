@@ -24,7 +24,7 @@ END=$2
 
 
 num_user=20
-for datarate in $(seq 0 10)
+for datarate in $(seq 0 4)
 do
 	for depth in $(seq 1 8)
 	do
