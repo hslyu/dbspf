@@ -137,6 +137,9 @@ class UAVBasestation:
     gbs_channel: float = 0
     gbs_los_prob: float = 0
 
+    def calc_PF(self):
+        return sum([math.log2(ue.serviced_data-10) for ue in self.list_ue if ue.serviced_data != 10])
+
     def save(self, path):
         with open(path, 'wb') as f:
             pickle.dump(self, f)
