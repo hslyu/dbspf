@@ -18,13 +18,13 @@ import pickle
 @dataclass
 class Parameters:
     # Some numbers
-    num_ue: int=80
+    num_ue: int=20
     num_subcarriers: int=10
     num_timeslots: int=20
     # Map
     map_width: int=600 # meter
-    min_altitude: int=30 # meter
-    max_altitude: int=250 # meter
+    min_altitude: int=50 # meter
+    max_altitude: int=160 # meter
     # Time, velocity
     time_duration: float=3 #s
     uav_max_dist: float=45 #m
@@ -251,8 +251,8 @@ def initialize_users(path: str=None):
         # Make default subcarrier
         for i in range(param.num_ue):
             position = Position(random.randint(0, param.map_width), random.randint(0, param.map_width), 0)
-            list_subcarrier_UBS = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
-            list_subcarrier_GBS = [Subcarrier(param.frequency + 1.5e-5 * i) for i in range(param.num_subcarriers)]
+            list_subcarrier_UBS = [Subcarrier(param.frequency + 2e-4 * i) for i in range(param.num_subcarriers)]
+            list_subcarrier_GBS = [Subcarrier(param.frequency + 2e-4 * i) for i in range(param.num_subcarriers)]
             ue = Device(i, position, list_subcarrier_UBS, list_subcarrier_GBS, random.randint(0,1), random.randint(param.time_start_range[0], param.time_start_range[1]), param.time_window_size)
             list_ue.append(ue)
     else:
