@@ -172,7 +172,7 @@ radius_bound     = {'low' : 0,'high' : param.uav_max_dist, 'step':5} # int
 
 num_generations = 20000 # Number of generations.
 num_parents_mating = 10 # Number of solutions to be selected as parents in the mating pool.
-sol_per_pop = 80 # Number of solutions in the population.
+sol_per_pop = 40 # Number of solutions in the population.
 
 idx_start = args.index_start
 idx_end = args.index_end
