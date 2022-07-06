@@ -15,7 +15,7 @@ BANDWIDTH_ORIG = 1.8e6 # Hz
 POWER_ORIG = 200 # mW
 BANDWIDTH = 1. # 20 MHz per unit
 POWER = 1. # 200 mW per unit
-NOISE_DENSITY = -174 # noise spectral density(Johnson-Nyquist_noise)
+NOISE_DENSITY = -173.8 # noise spectral density(Johnson-Nyquist_noise)
 LOS_EXCESSIVE = 1 # dB, excessive pathloss of los link
 NLOS_EXCESSIVE = 40 # dB, excessive pathloss of nlos link
 #LOS_EXCESSIVE = 1 # dB, excessive pathloss of los link
@@ -167,20 +167,20 @@ class TrajectoryNode:#{{{
 
     def psd2snr(self, psd, pathloss):
         """ 
-        Because unit of psd is 200mW/2MHz, we should convert it to mw/Hz
+        Because unit of psd is 200mW/2MHz = 1e-4 mw/Hz, we should convert it to mw/Hz
         """
         
         if psd == 0:
             return 0
         else:
-            return 10*math.log10(psd) + 10*math.log10(POWER_ORIG/BANDWIDTH_ORIG) - pathloss - NOISE_DENSITY
+            return 10*math.log10(psd * POWER_ORIG/BANDWIDTH_ORIG) - pathloss - NOISE_DENSITY
 
     def snr2se(self, snr):
         """
         Because unit of resource is 20MHz,
         we should convert the unit of se from bps/Hz to Mbps/20MHz
         """
-        return math.log(1+pow(10,snr/10),2)
+        return math.log2(1+pow(10,snr/10))
 
     def get_valid_user(self):
         valid_users = []
@@ -247,9 +247,9 @@ class TrajectoryNode:#{{{
     def init_ua_ra(self, user_pool=None, isGBS=False):
         def ra_objective(sorted_valid_user_list, ra_list):
             if isGBS:
-                return sum([math.log2(1+BANDWIDTH_ORIG*ra*user.se_gbs/user.total_data) if user.time_start <= self.current_time <= user.time_end else 0 for user, ra in zip(sorted_valid_user_list, ra_list)])
+                return sum([math.log(1+BANDWIDTH_ORIG*ra*user.se_gbs/user.total_data) if user.time_start <= self.current_time <= user.time_end else 0 for user, ra in zip(sorted_valid_user_list, ra_list)])
             else:
-                return sum([math.log2(1+BANDWIDTH_ORIG*ra*user.se/user.total_data) if user.time_start <= self.current_time <= user.time_end else 0 for user, ra in zip(sorted_valid_user_list, ra_list)])
+                return sum([math.log(1+BANDWIDTH_ORIG*ra*user.se/user.total_data) if user.time_start <= self.current_time <= user.time_end else 0 for user, ra in zip(sorted_valid_user_list, ra_list)])
             
         def sort_key(user):
             # TODO: user.datarate is weird: user.datarate/user.se?
@@ -495,7 +495,7 @@ class TrajectoryNode:#{{{
                 print("psd, user.ra, se, user.total_data:", psd, user.ra, se, user.total_data)
                 print([user.ra for user in self.user_list])
             # user.ra = unit of 20MHz = 20 * unit of MHz
-            value += math.log2(1+(user.ra*BANDWIDTH_ORIG)*se/user.total_data)
+            value += math.log(1+(user.ra*BANDWIDTH_ORIG)*se/user.total_data)
         return value#}}}#
     #}}}
 
@@ -772,28 +772,28 @@ if __name__ =="__main__":
 
         PATH1 = tree.pathfinder()
         user_list = PATH1[-1].user_list
-        tmp_pf_proposed = sum([math.log2(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
+        tmp_pf_proposed = sum([math.log(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
         pf_proposed += tmp_pf_proposed
 
         for user in user_list: 
             user.total_data = INITIAL_DATA
         PATH2 = circular_path(100, user_list)
         user_list = PATH2[-1].user_list
-        tmp_pf_circular = sum([math.log2(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
+        tmp_pf_circular = sum([math.log(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
         pf_circular += tmp_pf_circular
 
         for user in user_list: 
             user.total_data = INITIAL_DATA
         PATH3 = random_path(user_list)
         user_list = PATH3[-1].user_list
-        tmp_pf_random = sum([math.log2(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
+        tmp_pf_random = sum([math.log(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
         pf_random += tmp_pf_random
 
         for user in user_list: 
             user.total_data = INITIAL_DATA
         PATH4 = fixed_path(user_list)
         user_list = PATH4[-1].user_list
-        tmp_pf_fixed = sum([math.log2(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
+        tmp_pf_fixed = sum([math.log(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
         pf_fixed += tmp_pf_fixed
         print(f'Iteration: {j}, Proposed: {tmp_pf_proposed: .2f}, Circular: {tmp_pf_circular: .2f}, random: {tmp_pf_random: .2f}, fixed: {tmp_pf_fixed: .2f}')
     print(f'DFS trajectory pf: {pf_proposed/num_exp}')
