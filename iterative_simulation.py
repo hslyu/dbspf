@@ -102,7 +102,7 @@ if __name__ =="__main__":
         total_reward = 0
         total_time = 0
         user_list = dbs_trajectory[-1].user_list
-        obj = sum([math.log2(user.total_data-env_args.initial_data) for user in user_list if user.total_data != env_args.initial_data])
+        obj = sum([math.log(user.total_data-env_args.initial_data) for user in user_list if user.total_data != env_args.initial_data])
         avg_obj += obj
         for node in dbs_trajectory:
             total_reward += node.reward
