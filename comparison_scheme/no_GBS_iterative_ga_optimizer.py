@@ -254,10 +254,10 @@ for i in range(idx_start, idx_end):#{{{
         UBS.prev_position = UBS.position
         UBS.position = sm.Position(position_x, position_y, position_z)
 
-#        if not os.path.exists(dirname):
-#            os.makedirs(dirname)
-#        ga_instance.save(filename=f'{dirname}/ga_{time_index}')
-#        UBS.save(f'{dirname}/UBS_{time_index}.pkl')
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        ga_instance.save(filename=f'{dirname}/ga_{time_index}')
+        UBS.save(f'{dirname}/UBS_{time_index}.pkl')
 
         current_obj = sum([math.log(ue.serviced_data-10) for ue in list_ue if ue.serviced_data != 10])
         print(f'Current episode: {i}, time: {time_index}, elapsed time: {time.time()-start:.3f}, current obj: {current_obj: .4f}')
