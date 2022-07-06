@@ -19,7 +19,7 @@ sys.path.insert(0, parent_dir)
 import system_model as sm
 
 num_env=150
-def parse(root: str="/home/hslyu/storage/result_twc21/tw20_user20/datarate_0"):
+def parse(root: str="/home/hslyu/storage/result_twc21_07_06/tw20_user20/datarate_0"):
     list_pf = np.zeros(20)
 
     for j in range(num_env):
@@ -47,7 +47,7 @@ if __name__=="__main__":
     plt.ylabel("pf")
     for d in range(0,11):
         print(d)
-        root = f"/home/hslyu/storage/result_twc21/tw20_user20/datarate_{d}"
+        root = f"/home/hslyu/storage/result_twc21_07_06/tw20_user20/datarate_{d}"
         plt.plot(parse(root), label=f"datarate_{d}")
         
     plt.legend(loc='best')
