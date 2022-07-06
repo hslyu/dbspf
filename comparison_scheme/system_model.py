@@ -138,7 +138,7 @@ class UAVBasestation:
     gbs_los_prob: float = 0
 
     def calc_PF(self):
-        return sum([math.log2(ue.serviced_data-10) for ue in self.list_ue if ue.serviced_data != 10])
+        return sum([math.log(ue.serviced_data-10) for ue in self.list_ue if ue.serviced_data != 10])
 
     def save(self, path):
         with open(path, 'wb') as f:
