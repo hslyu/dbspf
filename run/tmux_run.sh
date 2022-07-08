@@ -15,6 +15,7 @@ datarate=$3
 NUM_SESS=10
 WINDOWS=$(seq 0 $NUM_SESS)
 
+num_user=20
 for window in $WINDOWS
 do
 	if [ $window -eq 0 ]; then
