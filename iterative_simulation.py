@@ -16,7 +16,7 @@ def get_parser():
     parser = argparse.ArgumentParser(description='Simulate drone base station with specific depth',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-t', '--tree_depth', type=int, help='Tree depth')
-    parser.add_argument('-n', '--num_node_iter', type=int, default=0, help='Number of node iteration.')
+    parser.add_argument('-n', '--num_node_iter', type=int, default=50, help='Number of node iteration.')
     parser.add_argument('--env_path', default=os.path.join(os.getcwd(), 'data'), type=str, help='Path of the environment directory')
     parser.add_argument('--env_args_filename', default='args.json', type=str, help='Filename of the environment argument json file')
     parser.add_argument('--result_path', default=os.path.join(os.getcwd(), 'result'), type=str, help='Path of the result directory')
