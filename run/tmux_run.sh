@@ -1,15 +1,16 @@
 #!/bin/bash
 
-if [ "$#" -ne 2 ];
+if [ "$#" -ne 3 ];
 then 
-	echo "usage: $0 <NUM_EXP> <START_INDEX>"
+	echo "usage: $0 <NUM_EXP> <START_INDEX> <datarate>"
 	exit
 fi	
 
-sess="PF"
+sess="PF$3"
 
 NUM_EXP=$1
 START=$2
+datarate=$3
 
 NUM_SESS=10
 WINDOWS=$(seq 0 $NUM_SESS)
@@ -21,6 +22,10 @@ do
 	fi
 	END=`expr $START + $NUM_EXP`
 	tmux send-keys -t $sess:$window "cd ~/dbspf" Enter
-	tmux send-keys -t $sess:$window "run/recursive_simulation.sh $START $END" Enter
+	for depth in $(seq 1 7)
+	do
+		result_dir="result/datarate_$datarate/user_$num_user/depth_$depth"
+		tmux send-keys -t $sess:$window "python ~/dbspf/iterative_simulation.py -t $depth --index_start $START --index_end $END --num_user $num_user --datarate $datarate --result_path $result_dir" Enter
+	done
 	START=$END
 done
