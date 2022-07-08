@@ -246,7 +246,7 @@ for i in range(idx_start, idx_end):#{{{
 #            print("Best fitness value reached after {best_solution_generation} generations.".format(best_solution_generation=ga_instance.best_solution_generation))
 
         # Applying solution to system model
-        list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z = decode_gene(solution)
+        list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z, valid_user_list = decode_gene(solution)
         list_rate = sol2rate(solution)
 
         for rate, ue in zip(list_rate, valid_user_list):
