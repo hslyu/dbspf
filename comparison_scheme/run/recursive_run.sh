@@ -6,11 +6,12 @@ then
 	exit
 fi	
 
-sess="PF"
 
 NUM_EXP=$1
 START=$2
 DATARATE=$3
+
+sess="PF$3"
 
 NUM_SESS=10
 WINDOWS=$(seq 0 $NUM_SESS)
