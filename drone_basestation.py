@@ -730,11 +730,11 @@ if __name__ =="__main__":
     MAX_ALTITUDE = 100 # meter
     GRID_SIZE = 40 # meter
     # Constant for user
-    NUM_UE = 10
+    NUM_UE = 20
     NUM_NODE_ITER = 0
     TIME_WINDOW_SIZE = [2, 2]
     TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
-    DATARATE_WINDOW = [0, 0] # Requiring datarate Mb/s
+    DATARATE_WINDOW = [10, 10] # Requiring datarate Mb/s
     INITIAL_DATA = 10 # Mb
     TREE_DEPTH = 1
     MAX_DATA = 99999999
