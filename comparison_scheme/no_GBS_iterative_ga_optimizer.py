@@ -168,7 +168,7 @@ ue_power_bound   = {'low' : 0,'high' : 10 + 1} # int, The number 0 and 100 are n
 theta_bound      = {'low' : 0,'high' : 340, 'step': 20} # int
 pi_bound         = {'low' : 0,'high' : 340, 'step': 20} # int
 #radius_bound     = {'low' : 0,'high' : param.uav_max_dist + 1e-8, 'step' : 1} # real
-radius_bound     = {'low' : 0,'high' : param.uav_max_dist, 'step':5} # int
+radius_bound     = {'low' : 0,'high' : param.uav_max_dist, 'step':15} # int
 
 num_generations = 5000 # Number of generations.
 num_parents_mating = 10 # Number of solutions to be selected as parents in the mating pool.
@@ -248,8 +248,9 @@ for i in range(idx_start, idx_end):#{{{
         list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z = decode_gene(solution)
         list_rate = sol2rate(solution)
 
-        for rate, ue in zip(list_rate, list_ue):
+        for rate, ue in zip(list_rate, valid_user_list):
             ue.serviced_data += rate
+            ue.sericed_time += 1
 
         UBS.prev_position = UBS.position
         UBS.position = sm.Position(position_x, position_y, position_z)
