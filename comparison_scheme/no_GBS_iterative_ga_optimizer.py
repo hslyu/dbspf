@@ -170,9 +170,9 @@ pi_bound         = {'low' : 0,'high' : 340, 'step': 20} # int
 #radius_bound     = {'low' : 0,'high' : param.uav_max_dist + 1e-8, 'step' : 1} # real
 radius_bound     = {'low' : 0,'high' : param.uav_max_dist, 'step':15} # int
 
-num_generations = 5000 # Number of generations.
+num_generations = 10000 # Number of generations.
 num_parents_mating = 10 # Number of solutions to be selected as parents in the mating pool.
-sol_per_pop = 80 # Number of solutions in the population.
+sol_per_pop = 50 # Number of solutions in the population.
 
 idx_start = args.index_start
 idx_end = args.index_end
@@ -225,7 +225,7 @@ for i in range(idx_start, idx_end):#{{{
                                crossover_type = 'single_point',
                                gene_type = copy.deepcopy(gene_type),
                                gene_space = gene_space,
-                               stop_criteria = ["saturate_250"]
+                               stop_criteria = ["saturate_750"]
                                )
         
         # Running the GA to optimize the parameters of the function.
@@ -250,7 +250,7 @@ for i in range(idx_start, idx_end):#{{{
 
         for rate, ue in zip(list_rate, valid_user_list):
             ue.serviced_data += rate
-            ue.sericed_time += 1
+            ue.serviced_time += 1
 
         UBS.prev_position = UBS.position
         UBS.position = sm.Position(position_x, position_y, position_z)
