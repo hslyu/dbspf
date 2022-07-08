@@ -20,7 +20,7 @@ MAX_TIMESLOT = 20 # unit of (TIME_STEP) s
 ## Constant for map
 MAP_WIDTH = 600 # meter, Both X and Y axis width
 MIN_ALTITUDE = 40 # meter
-MAX_ALTITUDE = 150 # meter
+MAX_ALTITUDE = 200 # meter
 GRID_SIZE = 40 # meter
 # Constant for user
 NUM_UE = 200
