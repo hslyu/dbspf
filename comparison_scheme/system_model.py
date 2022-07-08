@@ -140,6 +140,14 @@ class UAVBasestation:
     def calc_PF(self):
         return sum([math.log(ue.serviced_data-10) for ue in self.list_ue if ue.serviced_data != 10])
 
+    def calc_JFI(self):
+        list_data = [ue.serviced_data-10 for ue in self.list_ue if ue.serviced_data != 10]
+
+        if len(list_data) == 0:
+            return 0
+        else:
+            return sum(list_data)**2/(len(list_data)*sum([data**2 for data in list_data]))
+
     def save(self, path):
         with open(path, 'wb') as f:
             pickle.dump(self, f)
