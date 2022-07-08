@@ -99,8 +99,7 @@ def decode_gene(X):
     position_y = UBS.prev_position.y + radius * math.sin(theta) * math.sin(pi)
     position_z = UBS.prev_position.z + radius * math.cos(pi)
 
-    return list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z
-
+    return list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z, valid_user_list
 
 def sol2rate(solution):
     """
@@ -115,7 +114,9 @@ def sol2rate(solution):
     # list_ue_{alpha, power} - size : param.num_ue * param.num_subcarriers
     # list_UBS_power - size : param.num_subcarriers
     # position_{x,y,z} - size : 1
-    list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z = decode_gene(solution)
+    list_ue_UBS_alpha, list_ue_power, position_x, position_y, position_z, valid_user_list = decode_gene(solution)
+    if param.min_altitude > position_z or param.max_altitude < position_z:
+        return [0]*len(valid_user_list)
 
     UBS.position = sm.Position(position_x, position_y, position_z)
 
@@ -123,7 +124,7 @@ def sol2rate(solution):
     UBS.calc_channel() 
 
     list_rate = []
-    for i, user in enumerate(get_valid_user(list_ue, time_index)):
+    for i, user in enumerate(valid_user_list):
         # Find sum-rate 
         sumrate = 0
         for j, subcarrier in enumerate(user.list_subcarrier_UBS):
