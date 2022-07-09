@@ -166,8 +166,8 @@ param.SNR_threshold = 2**(args.datarate/(param.subcarrier_bandwidth*10))-1
 
 ue_alpha_bound   = {'low' : 0,'high' : param.num_ue + 1} # int
 ue_power_bound   = {'low' : 0,'high' : 10 + 1} # int, The number 0 and 100 are not power bounds. It is softmax ratio
-theta_bound      = {'low' : 0,'high' : 340, 'step': 20} # int
-pi_bound         = {'low' : 0,'high' : 340, 'step': 20} # int
+theta_bound      = {'low' : 0,'high' : 300, 'step': 60} # int
+pi_bound         = {'low' : 0,'high' : 300, 'step': 60} # int
 #radius_bound     = {'low' : 0,'high' : param.uav_max_dist + 1e-8, 'step' : 1} # real
 radius_bound     = {'low' : 0,'high' : param.uav_max_dist, 'step':15} # int
 
@@ -182,7 +182,7 @@ avg_obj=0
 current_obj = 0
 for i in range(idx_start, idx_end):#{{{
     envname = f'env_{i:04d}'
-    dirname = os.path.join(args.result_path, f'tw{param.num_timeslots}_user{param.num_ue}/{envname}')
+    dirname = os.path.join(args.result_path, f'tw{param.num_timeslots}_user{param.num_ue}/datarate_{args.datarate}/{envname}')
     UBS, GBS, list_ue = sm.initialize_network(os.path.join(args.env_path, f'env/{envname}.json'))
     #UBS, GBS, list_ue = sm.initialize_network()
 
@@ -226,11 +226,11 @@ for i in range(idx_start, idx_end):#{{{
                                crossover_type = 'single_point',
                                gene_type = copy.deepcopy(gene_type),
                                gene_space = gene_space,
-                               stop_criteria = ["saturate_750"]
+                               stop_criteria = ["saturate_1000"]
                                )
         
         # Running the GA to optimize the parameters of the function.
-        ga_instance.population[0] = encode_gene_max_snr(UBS, GBS, valid_user_list)
+#        ga_instance.population[0] = encode_gene_max_snr(UBS, GBS, valid_user_list)
         ga_instance.run()
 
 
