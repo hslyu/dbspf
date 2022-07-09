@@ -100,7 +100,7 @@ class Device:
         self.list_subcarrier_UBS = list_subcarrier_UBS
         self.list_subcarrier_GBS = list_subcarrier_GBS
         self.time_start = time_start
-        self.time_end = self.time_start + tw_size
+        self.time_end = self.time_start + tw_size - 1
         self.serviced_time = 0
         self.mode = mode
         self.los_prob = 0
