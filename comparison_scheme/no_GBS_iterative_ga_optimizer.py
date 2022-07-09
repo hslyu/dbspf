@@ -230,7 +230,7 @@ for i in range(idx_start, idx_end):#{{{
                                )
         
         # Running the GA to optimize the parameters of the function.
-#        ga_instance.population[0] = encode_gene_max_snr(UBS, GBS, valid_user_list)
+        ga_instance.population[0] = encode_gene_max_snr(UBS, GBS, valid_user_list)
         ga_instance.run()
 
 
