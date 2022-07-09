@@ -24,7 +24,7 @@ class Parameters:
     # Map
     map_width: int=600 # meter
     min_altitude: int=50 # meter
-    max_altitude: int=160 # meter
+    max_altitude: int=200 # meter
     # Time, velocity
     time_duration: float=3 #s
     uav_max_dist: float=45 #m
