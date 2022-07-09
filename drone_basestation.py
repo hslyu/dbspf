@@ -39,7 +39,7 @@ class User:#{{{
         self.id = uid
         self.position = position
         self.time_start = time_start
-        self.time_end = self.time_start + tw_size
+        self.time_end = self.time_start + tw_size - 1
         self.time_period = time_period
         self.serviced_time = 0
         # Requiring datarate Mb/s
@@ -180,14 +180,15 @@ class TrajectoryNode:#{{{
         Because unit of resource is 20MHz,
         we should convert the unit of se from bps/Hz to Mbps/20MHz
         """
-        return math.log2(1+pow(10,snr/10))
+        return math.log2(1+10**(snr/10))
 
     def get_valid_user(self):
         valid_users = []
         # Find valid user set
         for user in self.user_list:
-            if user.time_start <= self.current_time%user.time_period <= user.time_end and \
-                    user.max_data > user.received_data:
+#            if user.time_start <= self.current_time%user.time_period <= user.time_end and \
+#                    user.max_data > user.received_data:
+            if user.time_start <= self.current_time <= user.time_end:
                 valid_users.append(user)
         # LIST OF VALID USERS
         return valid_users
@@ -726,17 +727,17 @@ if __name__ =="__main__":
     MAX_TIMESLOT = 20 # unit of (TIME_STEP) s
     ## Constant for map
     MAP_WIDTH = 600 # meter, Both X and Y axis width
-    MIN_ALTITUDE = 40 # meter
-    MAX_ALTITUDE = 200 # meter
+    MIN_ALTITUDE = 100 # meter
+    MAX_ALTITUDE = 300 # meter
     GRID_SIZE = 45 # meter
     # Constant for user
     NUM_UE = 20
     NUM_NODE_ITER = 0
-    TIME_WINDOW_SIZE = [2, 2]
+    TIME_WINDOW_SIZE = [4, 4]
     TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
     DATARATE_WINDOW = [10, 10] # Requiring datarate Mb/s
     INITIAL_DATA = 10 # Mb
-    TREE_DEPTH = 1
+    TREE_DEPTH = 3
     MAX_DATA = 99999999
 
     pf_proposed = 0
@@ -748,8 +749,9 @@ if __name__ =="__main__":
     gbs = GroundBaseStation()
     for j in range(num_exp):
         position = [random.randint(0, MAP_WIDTH)//10*10,
-                     random.randint(0, MAP_WIDTH)//10*10,
-                     random.randint(MIN_ALTITUDE, MAX_ALTITUDE)//10*10]
+                    random.randint(0, MAP_WIDTH)//10*10,
+#                     random.randint(MIN_ALTITUDE, MAX_ALTITUDE)//10*10]
+                    200]
         # Initial grid position of UAV
         root = TrajectoryNode(position, NUM_NODE_ITER)
         # Make user list

@@ -19,12 +19,12 @@ TIME_STEP = 3 # s
 MAX_TIMESLOT = 20 # unit of (TIME_STEP) s
 ## Constant for map
 MAP_WIDTH = 600 # meter, Both X and Y axis width
-MIN_ALTITUDE = 40 # meter
-MAX_ALTITUDE = 200 # meter
+MIN_ALTITUDE = 200 # meter
+MAX_ALTITUDE = 300 # meter
 GRID_SIZE = 40 # meter
 # Constant for user
 NUM_UE = 200
-TIME_WINDOW_SIZE = [2,2]
+TIME_WINDOW_SIZE = [4,4] 
 TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
 #DATARATE_WINDOW = [0,0] # Requiring datarate Mb/s
 INITIAL_DATA = 10 # Mb
@@ -66,7 +66,8 @@ def environment_generator(parser):
         # Initial position of UAV
         env_dict['root_position'] = [random.randint(0, args.map_width)//args.grid_size*args.grid_size,
                              random.randint(0, args.map_width)//args.grid_size*args.grid_size,
-                             random.randint(args.min_altitude, args.max_altitude)//args.grid_size*args.grid_size]
+                             200]
+#                             random.randint(args.min_altitude, args.max_altitude)//args.grid_size*args.grid_size]
         # Make user list
         user_list = []
         for j in range(args.num_ue):
