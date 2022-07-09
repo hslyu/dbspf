@@ -726,9 +726,9 @@ if __name__ =="__main__":
     MAX_TIMESLOT = 20 # unit of (TIME_STEP) s
     ## Constant for map
     MAP_WIDTH = 600 # meter, Both X and Y axis width
-    MIN_ALTITUDE = 50 # meter
-    MAX_ALTITUDE = 100 # meter
-    GRID_SIZE = 40 # meter
+    MIN_ALTITUDE = 40 # meter
+    MAX_ALTITUDE = 200 # meter
+    GRID_SIZE = 45 # meter
     # Constant for user
     NUM_UE = 20
     NUM_NODE_ITER = 0
@@ -743,7 +743,7 @@ if __name__ =="__main__":
     pf_circular = 0 
     pf_fixed = 0 
     pf_random = 0 
-    num_exp = 10
+    num_exp = 50
 
     gbs = GroundBaseStation()
     for j in range(num_exp):
@@ -768,7 +768,7 @@ if __name__ =="__main__":
         tree = TrajectoryTree(root, VEHICLE_VELOCITY,\
                                 TIME_STEP, GRID_SIZE,\
                                 MAP_WIDTH, MIN_ALTITUDE, MAX_ALTITUDE,\
-                                TREE_DEPTH, NUM_NODE_ITER, MAX_TIMESLOT, gbs)
+                                TREE_DEPTH, NUM_NODE_ITER, MAX_TIMESLOT, gbs=None)
 
         PATH1 = tree.pathfinder()
         user_list = PATH1[-1].user_list
