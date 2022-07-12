@@ -129,18 +129,14 @@ def sol2rate(solution):
         sumrate = 0
         for j, subcarrier in enumerate(user.list_subcarrier_UBS):
             if list_ue_UBS_alpha[i,j] == 1:
-                carrier_rate = 0
                 # R^k_{n,R} in paper. eq (31)
-                power_ue_UBS = list_ue_power[i, j] * dB2orig(subcarrier.channel)
-                snr = power_ue_UBS / dB2orig(param.noise)
+                snr = list_ue_power[i, j] * dB2orig(subcarrier.channel) / dB2orig(param.noise)
                 # eq (35h) penalty function : QoS of ue - UBS and UBS - GBS link
-#                if snr < param.SNR_threshold:
-#                    continue
-                carrier_rate += param.subcarrier_bandwidth*math.log2(1 + snr) # Datarate of k-th subcarrier for i-th user
-                sumrate += carrier_rate
-        if sumrate < args.datarate:
-            sumrate = 0
-
+                if snr < param.SNR_threshold:
+                    continue
+                sumrate += param.subcarrier_bandwidth*math.log2(1 + snr) # Datarate of k-th subcarrier for i-th user
+#        if sumrate < args.datarate:
+#            sumrate = 0
         list_rate.append(sumrate)
 
     return list_rate
@@ -157,7 +153,9 @@ def callback_generation(ga_instance):
     Generation = ga_instance.generations_completed
     Fitness = ga_instance.best_solution()[1]
     Change = ga_instance.best_solution()[1] - last_fitness
-#    print( f'{Generation = :02d},\t {Fitness = :.4f},\t\t {Change = :.4f}')
+#    print( f'{Generation = :02d}, {Fitness = :.4f}, {Change = :.4f}, User: {len(valid_user_list)}')
+    if Generation % 20 == 0:
+        print( f'{Generation = :02d}, {Fitness = :.4f}, User: {valid_user_list}')
     last_fitness = ga_instance.best_solution()[1]
 
 parser = get_parser()
@@ -172,8 +170,8 @@ pi_bound         = {'low' : 0,'high' : 300, 'step': 60} # int
 radius_bound     = {'low' : 0,'high' : param.uav_max_dist, 'step':15} # int
 
 num_generations = 10000 # Number of generations.
-num_parents_mating = 10 # Number of solutions to be selected as parents in the mating pool.
-sol_per_pop = 80 # Number of solutions in the population.
+num_parents_mating = 80 # Number of solutions to be selected as parents in the mating pool.
+sol_per_pop = 160 # Number of solutions in the population.
 
 idx_start = args.index_start
 idx_end = args.index_end
@@ -223,7 +221,7 @@ for i in range(idx_start, idx_end):#{{{
                                sol_per_pop=sol_per_pop, 
                                num_genes=num_genes,
                                on_generation=callback_generation,
-                               crossover_type = 'single_point',
+                               crossover_type = 'two_points',
                                gene_type = copy.deepcopy(gene_type),
                                gene_space = gene_space,
                                stop_criteria = ["saturate_1000"]
