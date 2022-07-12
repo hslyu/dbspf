@@ -11,9 +11,9 @@ from dataclasses import dataclass
 # Constant for wirless communication{{{
 FREQUENCY = 2.0*1e9 # Hz
 LIGHTSPEED = 3*1e8 # m/s
-BANDWIDTH_ORIG = 1.8e6 # Hz
+BANDWIDTH_ORIG = 1.8 # MHz
 POWER_ORIG = 200 # mW
-BANDWIDTH = 1. # 20 MHz per unit
+BANDWIDTH = 1. # <BANDWIDTH_ORIG> MHz per unit
 POWER = 1. # 200 mW per unit
 NOISE_DENSITY = -173.8 # noise spectral density(Johnson-Nyquist_noise)
 LOS_EXCESSIVE = 1 # dB, excessive pathloss of los link
@@ -107,11 +107,9 @@ class TrajectoryNode:#{{{
                 for user in self.user_list:
                     user.pathloss_gbs = self.GBS.user_channel(user)
 
-            start = time.time()
             # Calculate reward
             self.reward = self.get_reward(num_iter)
 #            self.reward = self.get_random_reward()
-            self.elapsed_time = time.time()-start
 
     def __repr__(self):
         return '{}'.format(self.position)
@@ -134,11 +132,13 @@ class TrajectoryNode:#{{{
                 self.user_list[idx].received_data = user.received_data
 
     def get_info(self):
-        print(f"Current step: {self.current_time}")
+        print(f"================================Current step: {self.current_time}=====================================")
         print("User throughput list (Mbps)")
-        print([0 if user.serviced_time == 0 else user.total_data//(user.serviced_time) for user in self.user_list])
+        print([0 if user.serviced_time == 0 else ((user.total_data-10)/(user.serviced_time))*100//1/100 for user in self.user_list])
         print("User total data (Mb)")
-        print([user.total_data//1 for user in self.user_list])
+        print([(user.total_data-10)//1 for user in self.user_list])
+        print("=====================================================================================")
+
 
     def __repr__(self):
         return "{}".format(self.position)
@@ -158,7 +158,7 @@ class TrajectoryNode:#{{{
         Caculate pathloss --> snr --> spectral efficiency
         """
         distance = self.distance_from_leaf(position, user)
-        angle = math.pi/2 - math.acos(position[2]/distance)
+        angle = math.asin(position[2]/distance)
         los_prob = 1/(1 + SURROUNDING_A * \
                 math.exp(-SURROUNDING_B*(180/math.pi*angle - SURROUNDING_A)))
         pathloss = 20*math.log10(4*math.pi*FREQUENCY*distance/LIGHTSPEED) + los_prob*LOS_EXCESSIVE + \
@@ -173,14 +173,14 @@ class TrajectoryNode:#{{{
         if psd == 0:
             return 0
         else:
-            return 10*math.log10(psd * POWER_ORIG/BANDWIDTH_ORIG) - pathloss - NOISE_DENSITY
+            return 10*math.log10(psd * POWER_ORIG/BANDWIDTH_ORIG*1e-6) - pathloss - NOISE_DENSITY
 
     def snr2se(self, snr):
         """
-        Because unit of resource is 20MHz,
-        we should convert the unit of se from bps/Hz to Mbps/20MHz
+        Because unit of resource is <BANDWIDTH_ORIG> MHz,
+        we should convert the unit of se from bps/Hz to Mbps/<BANDWIDTH_ORIG> MHz
         """
-        return math.log2(1+10**(snr/10))
+        return BANDWIDTH_ORIG*math.log2(1+10**(snr/10))
 
     def get_valid_user(self):
         valid_users = []
@@ -193,13 +193,32 @@ class TrajectoryNode:#{{{
         # LIST OF VALID USERS
         return valid_users
 
-    def get_reward(self, num_iter = 0):
-        if self.get_valid_user() == []:
+    def one_user(self, user):
+        user.ra = 1
+        user.psd = 1 # POWER/BANDWIDTH
+        user.snr = self.psd2snr(user.psd, user.pathloss)
+        user.se = self.snr2se(user.snr)
+        rate = user.ra*user.se
+        if rate < user.datarate:
             return 0
+        user.received_data += rate
+        user.total_data += rate
+        user.serviced_time += 1
+        reward = self.objective_function([user.psd], [user])
+        return reward
+
+    def get_reward(self, num_iter = 0):
+        valid_user_list = self.get_valid_user()
+
+        if valid_user_list == []:
+            return 0
+        elif len(valid_user_list) == 1:
+            return self.one_user(valid_user_list[0])
+
         # Initialize user psd, snr, and se.
         for user in self.user_list:
             # initial psd of users
-            user.psd = POWER/BANDWIDTH
+            user.psd = 1 # POWER/BANDWIDTH
             # SNR in dBm
             user.snr = self.psd2snr(user.psd, user.pathloss)
             user.se = self.snr2se(user.snr)
@@ -212,7 +231,7 @@ class TrajectoryNode:#{{{
         reward = self.objective_function([user.psd for user in ua_list], ua_list)
         prev_reward = reward
         count=1
-        
+
         if len(ua_list)!=1:
             while count < num_iter:
                 count += 1
@@ -221,17 +240,18 @@ class TrajectoryNode:#{{{
                     break
                 psd_list = self.kkt_psd(ua_list) # return psd
                 reward = self.objective_function(psd_list, ua_list)
-                if prev_reward-reward < 1e-3:
+                if prev_reward-reward < 2e-3:
                     break
                 prev_reward = reward
 
         for user, ra, psd in zip(ua_list, ra_list, psd_list):
-            self.user_list[user.id].ra = ra
-            self.user_list[user.id].psd = psd
+            user.ra = ra
+            user.psd = psd
             user.snr = self.psd2snr(user.psd, user.pathloss)
             user.se = self.snr2se(user.snr)
-            self.user_list[user.id].received_data += ra*user.se
-            self.user_list[user.id].total_data += ra*user.se
+            rate = ra*user.se
+            self.user_list[user.id].received_data += rate
+            self.user_list[user.id].total_data += rate
             user.serviced_time += 1
 
         reward_gbs = 0
@@ -248,59 +268,52 @@ class TrajectoryNode:#{{{
     def init_ua_ra(self, user_pool=None, isGBS=False):
         def ra_objective(sorted_valid_user_list, ra_list):
             if isGBS:
-                return sum([math.log(1+BANDWIDTH_ORIG*ra*user.se_gbs/user.total_data) if user.time_start <= self.current_time <= user.time_end else 0 for user, ra in zip(sorted_valid_user_list, ra_list)])
+                return sum([math.log(1+ra*user.se_gbs/user.total_data) if user.time_start <= self.current_time <= user.time_end else 0 for user, ra in zip(sorted_valid_user_list, ra_list)])
             else:
-                return sum([math.log(1+BANDWIDTH_ORIG*ra*user.se/user.total_data) if user.time_start <= self.current_time <= user.time_end else 0 for user, ra in zip(sorted_valid_user_list, ra_list)])
+                return sum([math.log(1+ra*user.se/user.total_data) if user.time_start <= self.current_time <= user.time_end else 0 for user, ra in zip(sorted_valid_user_list, ra_list)])
             
-        def sort_key(user):
-            # TODO: user.datarate is weird: user.datarate/user.se?
+        def max_waterfilling(v, user):
             if isGBS:
-                return 1./(user.total_data/user.se_gbs + user.datarate)
+                return max(user.datarate/user.se_gbs, v - user.total_data/user.se_gbs)
             else:
-                return 1./(user.total_data/user.se + user.datarate)
+                return max(user.datarate/user.se, v - user.total_data/user.se)
 
-        if isGBS:
-            if user_pool == None:
-                print("Invalid user pool")
-                exit()
-            user_pool = user_pool
-            sorted_valid_user_list = sorted(user_pool, key=sort_key, reverse=True)
-            sorted_valid_user_list = [user for user in sorted_valid_user_list if user.datarate / user.se_gbs < BANDWIDTH]
-            ra_filler = [user.total_data / user.se_gbs for user in sorted_valid_user_list]
-            ra_min = [user.datarate / user.se_gbs for user in sorted_valid_user_list]
-        else:
-            user_pool = self.get_valid_user()
-            sorted_valid_user_list = sorted(user_pool, key=sort_key, reverse=True)
-            sorted_valid_user_list = [user for user in sorted_valid_user_list if user.datarate / user.se < BANDWIDTH]
-            ra_filler = [user.total_data / user.se for user in sorted_valid_user_list]
-            ra_min = [user.datarate / user.se for user in sorted_valid_user_list]
+        def sum_bandwidth(v, user_list):
+            return sum([max_waterfilling(v, user) for user in user_list])-BANDWIDTH
 
         max_ra_list = []
-        max_objective = -999999
-        # Break flag for double for-loop
-        is_infeasible = False
-        for i in range(len(sorted_valid_user_list)):
-#            ra_list = [( BANDWIDTH + sum(ra_filler[:i+1]) ) / (i+1) - ra_filler[idx] for idx in range(i+1)] + [0] * ( len(self.user_list) - i - 1 )
-            ra_list = [( BANDWIDTH + sum(ra_filler[:i+1]) ) / (i+1) - ra_filler[idx] for idx in range(i+1)] 
+        max_ua_list = []
+        max_objective = -1e6
 
-            # Check feasibility of the requested datarate
-            for idx in range(i+1):
-                if ra_min[idx] > ra_list[idx]:
-                    is_infeasible = True
-            if is_infeasible:
-                break
+        valid_user_list = user_pool if isGBS else self.get_valid_user() 
+        for i in range(len(valid_user_list)**2):
+            candidate_user_list = []
+            for j, user in enumerate(valid_user_list):
+                if i & 1<<j:
+                    candidate_user_list.append(user)
 
-            if max_objective < ra_objective(sorted_valid_user_list, ra_list):
-                max_objective = ra_objective(sorted_valid_user_list, ra_list)
-                max_ra_list = ra_list
-        
-        candidate_user_list = []
-        for user, ra in zip(sorted_valid_user_list, max_ra_list):
+            if sum([user.datarate / user.se_gbs if isGBS else user.datarate / user.se for user in candidate_user_list]) > BANDWIDTH:
+                continue
+
+            v_min = 0
+            v_max = 10000
+            while abs(sum_bandwidth(v_min, candidate_user_list) - sum_bandwidth(v_max, candidate_user_list)) > 1e-4:
+                v_new = ( v_min + v_max ) / 2
+                if sum_bandwidth(v_new, candidate_user_list) < 0:
+                    v_min = v_new
+                else:
+                    v_max = v_new
+            
+            candidate_ra_list = [max_waterfilling(v_min, user) for user in candidate_user_list]
+            if max_objective < ra_objective(candidate_user_list, candidate_ra_list):
+                max_objective = ra_objective(candidate_user_list, candidate_ra_list)
+                max_ra_list = candidate_ra_list
+                max_ua_list = candidate_user_list
+
+        for user, ra in zip(max_ua_list, max_ra_list):
             user.ra = ra
-            if ra > 0:
-                candidate_user_list.append(user)
 
-        return candidate_user_list, max_ra_list
+        return max_ua_list, max_ra_list
 
     def kkt_ra(self, user_list):#{{{
         """
@@ -419,8 +432,8 @@ class TrajectoryNode:#{{{
             pl_over_noise = 10**((-user.pathloss-NOISE_DENSITY)/10.)
             pl_over_noise_list.append(pl_over_noise)
             # user.ra = unit of 20MHz = 20 * unit of MHz
-            c_rho_list.append((pow(2,user.datarate/(user.ra*BANDWIDTH_ORIG))-1)/pl_over_noise)
-            lambda_list.append(pl_over_noise/pow(2,user.datarate/(user.ra*BANDWIDTH_ORIG))/user.total_data)
+            c_rho_list.append((pow(2,user.datarate/user.ra)-1)/pl_over_noise)
+            lambda_list.append(pl_over_noise/pow(2,user.datarate/user.ra)/user.total_data)
         # return the sorted index list of the user lambda_list
         sorted_index = sorted(range(len(user_list)), key=lambda k: lambda_list[k])
 #        print(c_rho_list)
@@ -492,11 +505,11 @@ class TrajectoryNode:#{{{
         for psd, user in zip(psd_list, user_list):
             snr = self.psd2snr(psd, user.pathloss)
             se = self.snr2se(snr)
-            if 1+user.ra*BANDWIDTH_ORIG*se/user.total_data<0:
+            if 1+user.ra*se/user.total_data<0:
                 print("psd, user.ra, se, user.total_data:", psd, user.ra, se, user.total_data)
                 print([user.ra for user in self.user_list])
             # user.ra = unit of 20MHz = 20 * unit of MHz
-            value += math.log(1+(user.ra*BANDWIDTH_ORIG)*se/user.total_data)
+            value += math.log(1+user.ra*se/user.total_data)
         return value#}}}#
     #}}}
 
@@ -727,26 +740,27 @@ if __name__ =="__main__":
     MAX_TIMESLOT = 20 # unit of (TIME_STEP) s
     ## Constant for map
     MAP_WIDTH = 600 # meter, Both X and Y axis width
-    MIN_ALTITUDE = 100 # meter
-    MAX_ALTITUDE = 300 # meter
+    MIN_ALTITUDE = 50 # meter
+    MAX_ALTITUDE = 200 # meter
     GRID_SIZE = 45 # meter
     # Constant for user
     NUM_UE = 20
     NUM_NODE_ITER = 0
     TIME_WINDOW_SIZE = [4, 4]
     TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
-    DATARATE_WINDOW = [10, 10] # Requiring datarate Mb/s
+    DATARATE_WINDOW = [5, 5] # Requiring datarate Mb/s
     INITIAL_DATA = 10 # Mb
-    TREE_DEPTH = 3
+    TREE_DEPTH = 1
     MAX_DATA = 99999999
 
     pf_proposed = 0
     pf_circular = 0 
     pf_fixed = 0 
     pf_random = 0 
-    num_exp = 50
+    num_exp = 10
+    avg_time = 0
 
-    gbs = GroundBaseStation()
+#    gbs = GroundBaseStation()
     for j in range(num_exp):
         position = [random.randint(0, MAP_WIDTH)//10*10,
                     random.randint(0, MAP_WIDTH)//10*10,
@@ -771,8 +785,9 @@ if __name__ =="__main__":
                                 TIME_STEP, GRID_SIZE,\
                                 MAP_WIDTH, MIN_ALTITUDE, MAX_ALTITUDE,\
                                 TREE_DEPTH, NUM_NODE_ITER, MAX_TIMESLOT, gbs=None)
-
+        start = time.time()
         PATH1 = tree.pathfinder()
+        avg_time += time.time()-start
         user_list = PATH1[-1].user_list
         tmp_pf_proposed = sum([math.log(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
         pf_proposed += tmp_pf_proposed
@@ -802,3 +817,4 @@ if __name__ =="__main__":
     print(f'Circular trajectory pf: {pf_circular/num_exp}')
     print(f'Random trajectory pf: {pf_random/num_exp}')
     print(f'Fixed trajectory pf: {pf_fixed/num_exp}')
+    print(f'Elapsed time: {avg_time/num_exp}')
