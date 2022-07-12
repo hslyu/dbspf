@@ -18,7 +18,7 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
 
 base="/home/hslyu/storage/result_ours_07_10/tw20_user20/"
-
+d=5
 num_env=150
 def open_json(file_path):
     with open(file_path, encoding='utf-8') as f:
@@ -29,34 +29,35 @@ def open_json(file_path):
 
 def parse(root: str, depth):
 
-    coverage = 0
+    list_cdf = [0]*31
     for j in range(num_env):
         filename = f"env_{j:04d}-depth_{depth}-ue_20.json"
         
+        idx=0
         user_list = open_json(os.path.join(root, filename))
-        list_data = [0 for user in user_list if user['total_data'] != 10]
+        for data in range(0,151,5):
+            for user in user_list:
+                if user['total_data']-10 < data:
+                    list_cdf[idx] += 1/num_env/20
+            idx += 1
 
-        coverage += len(list_data)/len(user_list)
-
-    coverage /= num_env
-
-    return coverage
+    return list_cdf
 
 if __name__=="__main__":
     plot = plt.figure(1)
     plt.xlabel("datarate")
-    plt.ylabel("coverage")
+    plt.ylabel("cdf")
 
-    for depth in range(1,8):
-        coverage_list = []
+    for depth in range(1,7):
+        cdf_list = []
         print(f"-----------depth: {depth}-------------")
-        for d in range(0,11):
-            root = base+f"datarate_{d}/user_20/depth_{depth}"
-            coverage = parse(root, depth)
-            coverage_list.append(coverage)
-            print(coverage)
+        root = base+f"datarate_{d}/user_20/depth_{depth}"
+        cdf = parse(root, depth)
+        cdf_list.append(cdf)
+        for prob in cdf:
+            print(prob)
         print(f"-----------depth: {depth}-------------")
-        plt.plot(coverage_list, label=f"depth_{depth}")
+        plt.plot(cdf_list, label=f"depth_{depth}")
         plt.legend(loc='best')
 
     plt.show()

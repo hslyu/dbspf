@@ -51,7 +51,7 @@ if __name__=="__main__":
         coverage_list = []
         print(f"-----------depth: {depth}-------------")
         for d in range(0,11):
-            root = f"result/datarate_{d}/user_20/depth_{depth}"
+            root = f"~/storage/result_ours_07_10/tw20_user20/datarate_{d}/user_20/depth_{depth}"
             coverage = parse(root, depth)
             coverage_list.append(coverage)
             print(coverage)

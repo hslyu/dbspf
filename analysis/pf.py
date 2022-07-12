@@ -18,6 +18,7 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
 
 
+base="/home/hslyu/storage/result_ours_07_10/tw20_user20/"
 num_env=150
 def open_json(file_path):
     with open(file_path, encoding='utf-8') as f:
@@ -46,10 +47,10 @@ if __name__=="__main__":
     plt.xlabel("datarate")
     plt.ylabel("pf")
 
-    for depth in range(1,8):
+    for depth in range(1,7):
         pf_list = []
         for d in range(0,11):
-            root = f"result/datarate_{d}/user_20/depth_{depth}"
+            root = base+f"datarate_{d}/user_20/depth_{depth}"
             pf = parse(root, depth)
             pf_list.append(pf)
             print(pf)

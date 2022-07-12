@@ -18,7 +18,7 @@ sys.path.insert(0, parent_dir)
 import system_model as sm
 
 num_env=150
-def parse(root: str="/home/hslyu/storage/result_twc21_07_07/tw20_user20"):
+def parse(root: str="/home/hslyu/storage/result_twc21_07_10/tw20_user20"):
     list_pf = []
 
     for i in range(0,11):
