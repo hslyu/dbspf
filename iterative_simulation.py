@@ -24,6 +24,7 @@ def get_parser():
     parser.add_argument('--index_start', default=0, type=int, help='Iteration start index')
     parser.add_argument('--index_end', type=int, help='Iteration end index')
     parser.add_argument('--datarate', type=int, default=False, help='Option for datarate effect simulation')
+    parser.add_argument('--mode', type=str, default='circular', help='DFS, circular, fixed, random')
     return parser
 
 def load_root(path, num_user, env_index):
@@ -42,7 +43,7 @@ def load_root(path, num_user, env_index):
             user_list.append(user)
         root.user_list = user_list
 
-    return root
+    return root, user_list
 
 def save_result(filename, result_dir, env_args, main_args, env_index, total_reward, total_time, trajectory):
     result = {}
@@ -84,6 +85,8 @@ if __name__ =="__main__":
     env_args_dict = open_json(os.path.join(main_args.env_path, main_args.env_args_filename))
 
     env_args = type('Arguments', (object,), env_args_dict)
+    if main_args.mode != 'DFS':
+        main_args.result_path = os.path.join(main_args.result_path, main_args.mode, f'datarate_{main_args.datarate}')
     # Create directory to store the result
     create_dir(main_args.result_path)
     
@@ -91,14 +94,22 @@ if __name__ =="__main__":
     avg_reward = 0
     # Load root node and start trajectory plannnig
     for env_index in range(main_args.index_start, main_args.index_end):
-        root = load_root(main_args.env_path, main_args.num_user, env_index)
-        for user in root.user_list:
+        root, user_list = load_root(main_args.env_path, main_args.num_user, env_index)
+        for user in user_list:
             user.datarate = main_args.datarate
-        tree = dbs.TrajectoryTree(root, env_args.vehicle_velocity,
-                                env_args.time_step, env_args.grid_size,
-                                env_args.map_width, env_args.min_altitude, env_args.max_altitude,
-                                main_args.tree_depth, main_args.num_node_iter, env_args.max_timeslot)
-        dbs_trajectory = tree.pathfinder()
+        if main_args.mode == 'DFS': 
+            tree = dbs.TrajectoryTree(root, env_args.vehicle_velocity,
+                                    env_args.time_step, env_args.grid_size,
+                                    env_args.map_width, env_args.min_altitude, env_args.max_altitude,
+                                    main_args.tree_depth, main_args.num_node_iter, env_args.max_timeslot)
+            dbs_trajectory = tree.pathfinder()
+        elif main_args.mode == 'circular':
+            MAP_WIDTH = env_args.map_width
+            dbs_trajectory = dbs.circular_path(100, user_list, env_args.map_width, env_args.vehicle_velocity, env_args.max_timeslot)
+        elif main_args.mode == 'fixed':
+            dbs_trajectory = dbs.fixed_path(user_list, env_args.map_width, env_args.min_altitude, env_args.max_altitude, env_args.max_timeslot)
+        elif main_args.mode == 'random':
+            dbs_trajectory = dbs.random_path(user_list)
         total_reward = 0
         total_time = 0
         user_list = dbs_trajectory[-1].user_list
