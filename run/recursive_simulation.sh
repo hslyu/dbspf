@@ -20,6 +20,7 @@ END=$2
 #	echo "------------------------------------------------------"
 #done
 
+datarate=5
 for num_user in 10 80;
 do
 	for depth in $(seq 1 2 5)
