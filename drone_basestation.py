@@ -227,6 +227,8 @@ class TrajectoryNode:#{{{
                 user.se_gbs = self.snr2se(user.snr_gbs)
 
         ua_list, ra_list = self.init_ua_ra()
+        # Get rid of zero ra
+        ua_list = [user for user in ua_list if user.ra != 0]
         psd_list = self.kkt_psd(ua_list)
         reward = self.objective_function([user.psd for user in ua_list], ua_list)
         prev_reward = reward
@@ -431,7 +433,6 @@ class TrajectoryNode:#{{{
         for user in user_list:
             pl_over_noise = 10**((-user.pathloss-NOISE_DENSITY)/10.)
             pl_over_noise_list.append(pl_over_noise)
-            # user.ra = unit of 20MHz = 20 * unit of MHz
             c_rho_list.append((pow(2,user.datarate/user.ra)-1)/pl_over_noise)
             lambda_list.append(pl_over_noise/pow(2,user.datarate/user.ra)/user.total_data)
         # return the sorted index list of the user lambda_list
@@ -748,7 +749,7 @@ if __name__ =="__main__":
     NUM_NODE_ITER = 0
     TIME_WINDOW_SIZE = [4, 4]
     TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
-    DATARATE_WINDOW = [5, 5] # Requiring datarate Mb/s
+    DATARATE_WINDOW = [10, 10] # Requiring datarate Mb/s
     INITIAL_DATA = 10 # Mb
     TREE_DEPTH = 1
     MAX_DATA = 99999999
