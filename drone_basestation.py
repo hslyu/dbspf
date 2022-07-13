@@ -11,7 +11,7 @@ from dataclasses import dataclass
 # Constant for wirless communication{{{
 FREQUENCY = 2.0*1e9 # Hz
 LIGHTSPEED = 3*1e8 # m/s
-BANDWIDTH_ORIG = 1.8 # MHz
+BANDWIDTH_ORIG = 18 # MHz
 POWER_ORIG = 200 # mW
 BANDWIDTH = 1. # <BANDWIDTH_ORIG> MHz per unit
 POWER = 1. # 200 mW per unit

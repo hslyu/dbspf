@@ -24,7 +24,7 @@ def get_parser():
     parser.add_argument('--index_start', default=0, type=int, help='Iteration start index')
     parser.add_argument('--index_end', type=int, help='Iteration end index')
     parser.add_argument('--datarate', type=int, default=False, help='Option for datarate effect simulation')
-    parser.add_argument('--mode', type=str, default='circular', help='DFS, circular, fixed, random')
+    parser.add_argument('--mode', type=str, default='DFS', help='DFS, circular, fixed, random')
     return parser
 
 def load_root(path, num_user, env_index):
