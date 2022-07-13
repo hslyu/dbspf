@@ -21,6 +21,7 @@ def get_parser():
     parser.add_argument('--index_start', type=int, default=0, help='Iteration start index')
     parser.add_argument('--index_end', type=int, help='Iteration end index')
     parser.add_argument('--datarate', type=int, help='Datarate')
+    parser.add_argument('--num_ue', type=int, default=20, help='number of user')
     return parser
 
 def get_valid_user(user_list: list[sm.Device], time_index):
