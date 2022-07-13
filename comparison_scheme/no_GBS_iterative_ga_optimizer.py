@@ -156,8 +156,8 @@ def callback_generation(ga_instance):
     Fitness = ga_instance.best_solution()[1]
     Change = ga_instance.best_solution()[1] - last_fitness
 #    print( f'{Generation = :02d}, {Fitness = :.4f}, {Change = :.4f}, User: {len(valid_user_list)}')
-    if Generation % 20 == 0:
-        print( f'{Generation = :02d}, {Fitness = :.4f}, User: {valid_user_list}')
+#    if Generation % 20 == 0:
+#        print( f'{Generation = :02d}, {Fitness = :.4f}, User: {valid_user_list}')
     last_fitness = ga_instance.best_solution()[1]
 
 parser = get_parser()
