@@ -12,6 +12,7 @@ import pickle
 
 param = sm.param
 
+# ./no_GBS_iterative_ga_optimizer.py --index_end 1 --datarate 3
 def get_parser():
     parser = argparse.ArgumentParser(description='Simulate drone base station with specific depth',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -160,7 +161,7 @@ def callback_generation(ga_instance):
 
 parser = get_parser()
 args = parser.parse_args()
-param.SNR_threshold = 2**(args.datarate/(param.subcarrier_bandwidth*10))-1
+param.SNR_threshold = 2**(args.datarate/(param.subcarrier_bandwidth*param.num_subcarriers))-1
 
 ue_alpha_bound   = {'low' : 0,'high' : param.num_ue + 1} # int
 ue_power_bound   = {'low' : 0,'high' : 10 + 1} # int, The number 0 and 100 are not power bounds. It is softmax ratio
@@ -170,8 +171,8 @@ pi_bound         = {'low' : 0,'high' : 300, 'step': 60} # int
 radius_bound     = {'low' : 0,'high' : param.uav_max_dist, 'step':15} # int
 
 num_generations = 10000 # Number of generations.
-num_parents_mating = 80 # Number of solutions to be selected as parents in the mating pool.
-sol_per_pop = 160 # Number of solutions in the population.
+num_parents_mating = 20 # Number of solutions to be selected as parents in the mating pool.
+sol_per_pop = 50 # Number of solutions in the population.
 
 idx_start = args.index_start
 idx_end = args.index_end
@@ -224,7 +225,7 @@ for i in range(idx_start, idx_end):#{{{
                                crossover_type = 'two_points',
                                gene_type = copy.deepcopy(gene_type),
                                gene_space = gene_space,
-                               stop_criteria = ["saturate_1000"]
+                               stop_criteria = ["saturate_500"]
                                )
         
         # Running the GA to optimize the parameters of the function.
