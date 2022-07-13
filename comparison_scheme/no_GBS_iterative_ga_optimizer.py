@@ -20,7 +20,7 @@ def get_parser():
     parser.add_argument('--result_path', type=str, default='/home/hslyu/dbspf/comparison_scheme/result', help='Path of the result directory')
     parser.add_argument('--index_start', type=int, default=0, help='Iteration start index')
     parser.add_argument('--index_end', type=int, help='Iteration end index')
-    parser.add_argument('--datarate', type=int, help='Datarate')
+    parser.add_argument('--datarate', type=int, default=5,help='Datarate')
     parser.add_argument('--num_ue', type=int, default=20, help='number of user')
     return parser
 
@@ -156,8 +156,8 @@ def callback_generation(ga_instance):
     Fitness = ga_instance.best_solution()[1]
     Change = ga_instance.best_solution()[1] - last_fitness
 #    print( f'{Generation = :02d}, {Fitness = :.4f}, {Change = :.4f}, User: {len(valid_user_list)}')
-    if Generation % 20 == 0:
-        print( f'{Generation = :02d}, {Fitness = :.4f}, User: {valid_user_list}')
+#    if Generation % 20 == 0:
+#        print( f'{Generation = :02d}, {Fitness = :.4f}, User: {valid_user_list}')
     last_fitness = ga_instance.best_solution()[1]
 
 parser = get_parser()
