@@ -21,6 +21,6 @@ do
 	fi
 	END=`expr $START + $NUM_EXP`
 	tmux send-keys -t $sess:$window "cd ~/dbspf" Enter
-	tmux send-keys -t $sess:$window "run/recursive_simulation.sh $START $END" Enter
+	tmux send-keys -t $sess:$window "run/num_ue_simulation.sh $START $END" Enter
 	START=$END
 done
