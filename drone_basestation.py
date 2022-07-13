@@ -663,62 +663,59 @@ class TrajectoryTree:#{{{
         return path
         #}}}#}}}
 
-def fixed_path(user_list):
+def fixed_path(user_list, map_width=600, min_altitude=50, max_altitude=200, max_timeslot=20, num_node_iter=0):
     path = []
-    position = [random.randint(0, MAP_WIDTH)//10*10,
-                 random.randint(0, MAP_WIDTH)//10*10,
-                 random.randint(MIN_ALTITUDE, MAX_ALTITUDE)//10*10]
-    position = [MAP_WIDTH,
-                 MAP_WIDTH,
-                 MAX_ALTITUDE]
+    position = [random.randint(0, map_width)//10*10,
+                 random.randint(0, map_width)//10*10,
+                 random.randint(min_altitude, max_altitude)//10*10]
     # Initial grid position of UAV
-    node = TrajectoryNode(position, NUM_NODE_ITER)
+    node = TrajectoryNode(position, num_node_iter)
     # Make user list
     node.user_list = user_list
     path.append(node)
 
     prev_node = node
-    for time in range(1, MAX_TIMESLOT):
-        node = TrajectoryNode(position, NUM_NODE_ITER, parent=path[-1])
+    for time in range(1, max_timeslot):
+        node = TrajectoryNode(position, num_node_iter, parent=path[-1])
         path.append(node)
 
     return path
 
-def circular_path(radius, user_list):
+def circular_path(radius, user_list, map_width=600, vehicle_velocity=15, max_timeslot=20, num_node_iter=0):
     path = []
     initial_angle = 2*math.pi*random.random()
-    x = MAP_WIDTH/2-radius*math.cos(initial_angle)
-    y = MAP_WIDTH/2-radius*math.sin(initial_angle)
+    x = map_width/2-radius*math.cos(initial_angle)
+    y = map_width/2-radius*math.sin(initial_angle)
     # Initial grid position of UAV
-    node = TrajectoryNode([x, y, 750], NUM_NODE_ITER)
+    node = TrajectoryNode([x, y, 200], num_node_iter)
     node.user_list = user_list
 
     path.append(node)
 
-    unit_angle = VEHICLE_VELOCITY*MAX_TIMESLOT/radius
-    for time in range(1, MAX_TIMESLOT):
+    unit_angle = vehicle_velocity*max_timeslot/radius
+    for time in range(1, max_timeslot):
         position = [x-radius*math.cos(unit_angle*time), y-radius*math.sin(unit_angle*time), 75]
-        node = TrajectoryNode(position, NUM_NODE_ITER, parent=path[-1])
+        node = TrajectoryNode(position, num_node_iter, parent=path[-1])
         path.append(node)
 
     return path
 
-def random_path(user_list):
+def random_path(user_list, map_width=600, min_altitude=50, max_altitude=200, max_timeslot=20, vehicle_velocity=15, time_step=3, num_node_iter=0):
     path = []
-    position = [random.randint(0, MAP_WIDTH)//10*10,
-                 random.randint(0, MAP_WIDTH)//10*10,
-                 random.randint(MIN_ALTITUDE, MAX_ALTITUDE)//10*10]
+    position = [random.randint(0, map_width)//10*10,
+                 random.randint(0, map_width)//10*10,
+                 random.randint(min_altitude, max_altitude)//10*10]
     # Initial grid position of UAV
-    node = TrajectoryNode(position, NUM_NODE_ITER)
+    node = TrajectoryNode(position, num_node_iter)
     # Make user list
     node.user_list = user_list
 
     path.append(node)
 
     prev_node = node
-    for time in range(1, MAX_TIMESLOT):
+    for time in range(1, max_timeslot):
         # spherical coordinate random position
-        r = random.uniform(0, VEHICLE_VELOCITY*TIME_STEP)
+        r = random.uniform(0, vehicle_velocity*time_step)
         theta = random.uniform(0, math.pi)
         pi = random.uniform(0, math.pi*2)
         # Change of position from previous position
@@ -726,10 +723,10 @@ def random_path(user_list):
         # Position of current node
         position = [ a+b for a,b in zip(position, path[-1].position)]
         # Boundary check
-        position[0] = max(0,min(MAP_WIDTH, position[0]))
-        position[1] = max(0,min(MAP_WIDTH, position[1]))
-        position[2] = max(MIN_ALTITUDE, min(MAX_ALTITUDE, position[2]))
-        node = TrajectoryNode(position, NUM_NODE_ITER, parent=path[-1])
+        position[0] = max(0,min(map_width, position[0]))
+        position[1] = max(0,min(map_width, position[1]))
+        position[2] = max(min_altitude, min(max_altitude, position[2]))
+        node = TrajectoryNode(position, num_node_iter, parent=path[-1])
         path.append(node)
 
     return path
