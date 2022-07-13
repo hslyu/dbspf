@@ -156,8 +156,8 @@ def callback_generation(ga_instance):
     Fitness = ga_instance.best_solution()[1]
     Change = ga_instance.best_solution()[1] - last_fitness
 #    print( f'{Generation = :02d}, {Fitness = :.4f}, {Change = :.4f}, User: {len(valid_user_list)}')
-#    if Generation % 20 == 0:
-#        print( f'{Generation = :02d}, {Fitness = :.4f}, User: {valid_user_list}')
+    if Generation % 20 == 0:
+        print( f'{Generation = :02d}, {Fitness = :.4f}, User: {valid_user_list}')
     last_fitness = ga_instance.best_solution()[1]
 
 parser = get_parser()
@@ -173,7 +173,7 @@ radius_bound     = {'low' : 0,'high' : param.uav_max_dist, 'step':15} # int
 
 num_generations = 10000 # Number of generations.
 num_parents_mating = 20 # Number of solutions to be selected as parents in the mating pool.
-sol_per_pop = 50 # Number of solutions in the population.
+sol_per_pop = 40 # Number of solutions in the population.
 
 idx_start = args.index_start
 idx_end = args.index_end
