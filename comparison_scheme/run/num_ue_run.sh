@@ -2,7 +2,7 @@
 
 if [ "$#" -ne 3 ];
 then 
-	echo "usage: $0 <NUM_EXP> <START_INDEX> <DATARATE>"
+	echo "usage: $0 <NUM_EXP> <START_INDEX> <NUM_USER>"
 	exit
 fi	
 
