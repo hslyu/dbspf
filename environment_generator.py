@@ -27,7 +27,7 @@ NUM_UE = 200
 TIME_WINDOW_SIZE = [4,4] 
 TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
 #DATARATE_WINDOW = [0,0] # Requiring datarate Mb/s
-INITIAL_DATA = 10 # Mb
+INITIAL_DATA = 150 # Mb
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Generate consistent random position',
