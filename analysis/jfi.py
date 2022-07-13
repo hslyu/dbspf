@@ -17,8 +17,10 @@ current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfra
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
 
-
-base="/home/hslyu/storage/result_ours_07_10/tw20_user20/"
+comparison_mode=True
+base="/home/hslyu/storage/result_fixed_07_14/"
+#base="/home/hslyu/storage/result_ours_07_12/tw20_user20/"
+name="fixed"
 num_env=150
 def open_json(file_path):
     with open(file_path, encoding='utf-8') as f:
@@ -48,10 +50,11 @@ if __name__=="__main__":
     plt.xlabel("datarate")
     plt.ylabel("jfi")
 
-    for depth in range(1,8):
+    if comparison_mode:
+        depth = 1
         jfi_list = []
         for d in range(0,11):
-            root = base+f"datarate_{d}/user_20/depth_{depth}"
+            root = base+f"datarate_{d}"
             jfi = parse(root, depth)
             jfi_list.append(jfi)
             print(jfi)
@@ -59,5 +62,17 @@ if __name__=="__main__":
         plt.plot(jfi_list, label=f"depth_{depth}")
         plt.legend(loc='best')
 
-    plt.show()
+    else:
+        for depth in range(1,8):
+            jfi_list = []
+            for d in range(0,11):
+                root = base+f"datarate_{d}/user_20/depth_{depth}"
+                jfi = parse(root, depth)
+                jfi_list.append(jfi)
+                print(jfi)
+            print(f"-----------depth: {depth}-------------")
+            plt.plot(jfi_list, label=f"depth_{depth}")
+            plt.legend(loc='best')
+
+        plt.show()
 

@@ -17,7 +17,13 @@ current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfra
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
 
-base="/home/hslyu/storage/result_ours_07_10/tw20_user20/"
+comparison_mode=True
+#base="/home/hslyu/storage/result_circular_07_14/"
+#name="circular"
+base="/home/hslyu/storage/result_fixed_07_14/"
+name="fixed"
+#base="/home/hslyu/storage/result_ours_07_12/tw20_user20/"
+
 d=5
 num_env=150
 def open_json(file_path):
@@ -37,7 +43,7 @@ def parse(root: str, depth):
         user_list = open_json(os.path.join(root, filename))
         for data in range(0,151,5):
             for user in user_list:
-                if user['total_data']-10 < data:
+                if user['total_data']-10 <= data:
                     list_cdf[idx] += 1/num_env/20
             idx += 1
 
@@ -48,17 +54,28 @@ if __name__=="__main__":
     plt.xlabel("datarate")
     plt.ylabel("cdf")
 
-    for depth in range(1,7):
+    if comparison_mode:
+        depth = 1
         cdf_list = []
-        print(f"-----------depth: {depth}-------------")
-        root = base+f"datarate_{d}/user_20/depth_{depth}"
+        root = base+f"datarate_{d}"
         cdf = parse(root, depth)
         cdf_list.append(cdf)
         for prob in cdf:
             print(prob)
-        print(f"-----------depth: {depth}-------------")
-        plt.plot(cdf_list, label=f"depth_{depth}")
+        plt.plot(cdf_list, label=name)
         plt.legend(loc='best')
+    else:
+        for depth in range(1,7):
+            cdf_list = []
+            print(f"-----------depth: {depth}-------------")
+            root = base+f"datarate_{d}/user_20/depth_{depth}"
+            cdf = parse(root, depth)
+            cdf_list.append(cdf)
+            for prob in cdf:
+                print(prob)
+            print(f"-----------depth: {depth}-------------")
+            plt.plot(cdf_list, label=f"depth_{depth}")
+            plt.legend(loc='best')
 
     plt.show()
 
