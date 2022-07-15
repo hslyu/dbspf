@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$#" -ne 3 ];
+if [ "$#" -ne 4 ];
 then 
 	echo "usage: $0 <NUM_EXP> <START_INDEX> <NUM_USER> <SESSION_NAME>"
 	exit
