@@ -171,7 +171,7 @@ pi_bound         = {'low' : 0,'high' : 300, 'step': 60} # int
 #radius_bound     = {'low' : 0,'high' : param.uav_max_dist + 1e-8, 'step' : 1} # real
 radius_bound     = {'low' : 0,'high' : param.uav_max_dist, 'step':15} # int
 
-num_generations = 10000 # Number of generations.
+num_generations = 8000 # Number of generations.
 num_parents_mating = 20 # Number of solutions to be selected as parents in the mating pool.
 sol_per_pop = 40 # Number of solutions in the population.
 
