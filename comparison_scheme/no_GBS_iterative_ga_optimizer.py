@@ -134,11 +134,11 @@ def sol2rate(solution):
                 # R^k_{n,R} in paper. eq (31)
                 snr = list_ue_power[i, j] * dB2orig(subcarrier.channel) / dB2orig(param.noise)
                 # eq (35h) penalty function : QoS of ue - UBS and UBS - GBS link
-                if snr < param.SNR_threshold:
-                    continue
+#                if snr < param.SNR_threshold:
+#                    continue
                 sumrate += param.subcarrier_bandwidth*math.log2(1 + snr) # Datarate of k-th subcarrier for i-th user
-#        if sumrate < args.datarate:
-#            sumrate = 0
+        if sumrate < args.datarate:
+            sumrate = 0
         list_rate.append(sumrate)
 
     return list_rate
