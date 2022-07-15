@@ -2,7 +2,7 @@
 
 if [ "$#" -ne 3 ];
 then 
-	echo "usage: $0 <NUM_EXP> <START_INDEX> <NUM_USER>"
+	echo "usage: $0 <NUM_EXP> <START_INDEX> <NUM_USER> <SESSION_NAME>"
 	exit
 fi	
 
@@ -11,7 +11,7 @@ NUM_EXP=$1
 START=$2
 NUM_UE=$3
 
-sess="PF"
+sess=$4
 
 NUM_SESS=10
 WINDOWS=$(seq 0 $NUM_SESS)
