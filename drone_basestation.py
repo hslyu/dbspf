@@ -173,7 +173,7 @@ class TrajectoryNode:#{{{
         if psd == 0:
             return 0
         else:
-            return 10*math.log10(psd * POWER_ORIG/BANDWIDTH_ORIG*1e-6) - pathloss - NOISE_DENSITY
+            return 10*math.log10(psd * POWER_ORIG/(BANDWIDTH_ORIG*1e6)) - pathloss - NOISE_DENSITY
 
     def snr2se(self, snr):
         """
@@ -424,6 +424,12 @@ class TrajectoryNode:#{{{
             user.ra = resource
         
         return resource_list#}}}
+#
+#    def kkt_psd(self, user_list):
+#
+#        def max_waterfilling(v, user):
+#            return max((user.datarate/(user.ra*BANDWIDTH_ORIG)-1)**2/pl_over_noise
+
 
     def kkt_psd(self, user_list):#{{{
         lambda_list=[]
@@ -433,8 +439,8 @@ class TrajectoryNode:#{{{
         for user in user_list:
             pl_over_noise = 10**((-user.pathloss-NOISE_DENSITY)/10.)
             pl_over_noise_list.append(pl_over_noise)
-            c_rho_list.append((pow(2,user.datarate/user.ra)-1)/pl_over_noise)
-            lambda_list.append(pl_over_noise/pow(2,user.datarate/user.ra)/user.total_data)
+            c_rho_list.append((user.datarate/(user.ra*BANDWIDTH_ORIG)**2-1)/pl_over_noise)
+            lambda_list.append(pl_over_noise/pow(2,user.datarate/(user.ra*BANDWIDTH_ORIG))/user.total_data)
         # return the sorted index list of the user lambda_list
         sorted_index = sorted(range(len(user_list)), key=lambda k: lambda_list[k])
 #        print(c_rho_list)
@@ -746,8 +752,8 @@ if __name__ =="__main__":
     NUM_NODE_ITER = 0
     TIME_WINDOW_SIZE = [4, 4]
     TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
-    DATARATE_WINDOW = [5, 5] # Requiring datarate Mb/s
-    INITIAL_DATA = 80 # Mb
+    DATARATE_WINDOW = [10, 10] # Requiring datarate Mb/s
+    INITIAL_DATA = 10 # Mb
     TREE_DEPTH = 1
     MAX_DATA = 99999999
 
@@ -755,7 +761,7 @@ if __name__ =="__main__":
     pf_circular = 0 
     pf_fixed = 0 
     pf_random = 0 
-    num_exp = 10
+    num_exp = 100
     avg_time = 0
 
 #    gbs = GroundBaseStation()
