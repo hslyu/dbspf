@@ -182,7 +182,7 @@ avg_obj=0
 current_obj = 0
 for i in range(idx_start, idx_end):#{{{
     envname = f'env_{i:04d}'
-    dirname = os.path.join(args.result_path, f'tw{param.num_timeslots}_user{param.num_ue}/datarate_{args.datarate}/{envname}')
+    dirname = os.path.join(args.result_path, f'tw{param.num_timeslots}_user{args.num_ue}/datarate_{args.datarate}/{envname}')
     UBS, GBS, list_ue = sm.initialize_network(os.path.join(args.env_path, f'env/{envname}.json'))
     #UBS, GBS, list_ue = sm.initialize_network()
 
