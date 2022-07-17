@@ -13,7 +13,7 @@ NUM_UE=$3
 
 sess=$4
 
-NUM_SESS=10
+NUM_SESS=30
 WINDOWS=$(seq 0 $NUM_SESS)
 
 dir="~/dbspf/comparison_scheme"
