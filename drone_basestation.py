@@ -748,11 +748,11 @@ if __name__ =="__main__":
     MAX_ALTITUDE = 200 # meter
     GRID_SIZE = 45 # meter
     # Constant for user
-    NUM_UE = 80
+    NUM_UE = 70
     NUM_NODE_ITER = 0
     TIME_WINDOW_SIZE = [4, 4]
     TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
-    DATARATE_WINDOW = [10, 10] # Requiring datarate Mb/s
+    DATARATE_WINDOW = [0, 0] # Requiring datarate Mb/s
     INITIAL_DATA = 10 # Mb
     TREE_DEPTH = 1
     MAX_DATA = 99999999
@@ -761,7 +761,7 @@ if __name__ =="__main__":
     pf_circular = 0 
     pf_fixed = 0 
     pf_random = 0 
-    num_exp = 100
+    num_exp = 10
     avg_time = 0
 
 #    gbs = GroundBaseStation()
@@ -794,6 +794,7 @@ if __name__ =="__main__":
         avg_time += time.time()-start
         user_list = PATH1[-1].user_list
         tmp_pf_proposed = sum([math.log(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
+        tmp_sum_proposed = sum([user.total_data-INITIAL_DATA for user in user_list if user.total_data != INITIAL_DATA])
         pf_proposed += tmp_pf_proposed
 
         for user in user_list: 
@@ -801,6 +802,7 @@ if __name__ =="__main__":
         PATH2 = circular_path(100, user_list)
         user_list = PATH2[-1].user_list
         tmp_pf_circular = sum([math.log(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
+        tmp_sum_circular = sum([user.total_data-INITIAL_DATA for user in user_list if user.total_data != INITIAL_DATA])
         pf_circular += tmp_pf_circular
 
         for user in user_list: 
@@ -808,6 +810,7 @@ if __name__ =="__main__":
         PATH3 = random_path(user_list)
         user_list = PATH3[-1].user_list
         tmp_pf_random = sum([math.log(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
+        tmp_sum_random = sum([user.total_data-INITIAL_DATA for user in user_list if user.total_data != INITIAL_DATA])
         pf_random += tmp_pf_random
 
         for user in user_list: 
@@ -815,8 +818,10 @@ if __name__ =="__main__":
         PATH4 = fixed_path(user_list)
         user_list = PATH4[-1].user_list
         tmp_pf_fixed = sum([math.log(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
+        tmp_sum_fixed = sum([user.total_data-INITIAL_DATA for user in user_list if user.total_data != INITIAL_DATA])
         pf_fixed += tmp_pf_fixed
         print(f'Iteration: {j}, Proposed: {tmp_pf_proposed: .2f}, Circular: {tmp_pf_circular: .2f}, random: {tmp_pf_random: .2f}, fixed: {tmp_pf_fixed: .2f}')
+        print(f'Iteration: {j}, Proposed: {tmp_sum_proposed: .2f}, Circular: {tmp_sum_circular: .2f}, random: {tmp_sum_random: .2f}, fixed: {tmp_sum_fixed: .2f}')
     print(f'DFS trajectory pf: {pf_proposed/num_exp}')
     print(f'Circular trajectory pf: {pf_circular/num_exp}')
     print(f'Random trajectory pf: {pf_random/num_exp}')
