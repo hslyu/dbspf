@@ -163,6 +163,7 @@ def callback_generation(ga_instance):
 parser = get_parser()
 args = parser.parse_args()
 param.SNR_threshold = 2**(args.datarate/(param.subcarrier_bandwidth*param.num_subcarriers))-1
+param.num_ue = args.num_ue
 
 ue_alpha_bound   = {'low' : 0,'high' : param.num_ue + 1} # int
 ue_power_bound   = {'low' : 0,'high' : 10 + 1} # int, The number 0 and 100 are not power bounds. It is softmax ratio
