@@ -1,19 +1,17 @@
 #!/bin/bash
 
-if [ "$#" -ne 4 ];
+if [ "$#" -ne 2 ];
 then 
-	echo "usage: $0 <NUM_EXP> <START_INDEX> <NUM_USER> <SESSION_NAME>"
+	echo "usage: $0 <NUM_EXP> <START_INDEX>"
 	exit
 fi	
 
 
 NUM_EXP=$1
 START=$2
-NUM_UE=$3
+sess="PF"
 
-sess=$4
-
-NUM_SESS=30
+NUM_SESS=25
 WINDOWS=$(seq 0 $NUM_SESS)
 
 dir="~/dbspf/comparison_scheme"
@@ -23,6 +21,6 @@ do
 		continue
 	fi
 	END=`expr $START + $NUM_EXP`
-	tmux send-keys -t $sess:$window "python $dir/no_GBS_iterative_ga_optimizer.py --index_start $START --index_end $END --num_ue $NUM_UE" Enter
+	tmux send-keys -t $sess:$window "for ((UE=10;UE<=80;UE+=10)); do python $dir/no_GBS_iterative_ga_optimizer.py --index_start $START --index_end $END --num_ue \$UE; done" Enter
 	START=$END
 done
