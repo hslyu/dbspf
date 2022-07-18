@@ -172,9 +172,9 @@ pi_bound         = {'low' : 0,'high' : 300, 'step': 60} # int
 #radius_bound     = {'low' : 0,'high' : param.uav_max_dist + 1e-8, 'step' : 1} # real
 radius_bound     = {'low' : 0,'high' : param.uav_max_dist, 'step':15} # int
 
-num_generations = 8000 # Number of generations.
-num_parents_mating = 10 # Number of solutions to be selected as parents in the mating pool.
-sol_per_pop = 30 # Number of solutions in the population.
+num_generations = 5000 # Number of generations.
+num_parents_mating = 15 # Number of solutions to be selected as parents in the mating pool.
+sol_per_pop = 25 # Number of solutions in the population.
 
 idx_start = args.index_start
 idx_end = args.index_end
@@ -224,10 +224,10 @@ for i in range(idx_start, idx_end):#{{{
                                sol_per_pop=sol_per_pop, 
                                num_genes=num_genes,
                                on_generation=callback_generation,
-                               crossover_type = 'two_points',
+                               crossover_type = 'single_point',
                                gene_type = copy.deepcopy(gene_type),
                                gene_space = gene_space,
-                               stop_criteria = ["saturate_500"]
+                               stop_criteria = ["saturate_300"]
                                )
         
         # Running the GA to optimize the parameters of the function.
