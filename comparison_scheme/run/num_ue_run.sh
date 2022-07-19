@@ -21,6 +21,6 @@ do
 		continue
 	fi
 	END=`expr $START + $NUM_EXP`
-	tmux send-keys -t $sess:$window "for ((UE=10;UE<=80;UE+=10)); do python $dir/no_GBS_iterative_ga_optimizer.py --index_start $START --index_end $END --num_ue \$UE; done" Enter
+	tmux send-keys -t $sess:$window "for ((UE=80;UE>=10;UE-=10)); do python $dir/no_GBS_iterative_ga_optimizer.py --index_start $START --index_end $END --num_ue \$UE; done" Enter
 	START=$END
 done
