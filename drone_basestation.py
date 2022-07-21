@@ -89,6 +89,7 @@ class TrajectoryNode:#{{{
         # link
         self.leafs = []
         self.parent = parent
+        self.GBS = gbs 
 
         # If this node is root
         if self.parent is None:
@@ -102,7 +103,6 @@ class TrajectoryNode:#{{{
 
             # Ground base station
 #            gbs = GroundBaseStation()
-            self.GBS = gbs 
             if self.GBS is not None:
                 for user in self.user_list:
                     user.pathloss_gbs = self.GBS.user_channel(user)
@@ -125,7 +125,6 @@ class TrajectoryNode:#{{{
             self.user_list[idx].datarate = user.datarate
             self.user_list[idx].max_data = user.max_data
             self.user_list[idx].total_data = user.total_data
-            self.user_list[idx].pathloss = self.get_pathloss(self.position, user)
             if self.current_time % user.time_period == 0:
                 self.user_list[idx].received_data = 0
             else:
@@ -238,8 +237,6 @@ class TrajectoryNode:#{{{
             while count < num_iter:
                 count += 1
                 ra_list = self.kkt_ra(ua_list) # return ra
-                if any( ra < user.datarate for user, ra in zip(ua_list, ra_list) ):
-                    break
                 psd_list = self.kkt_psd(ua_list) # return psd
                 reward = self.objective_function(psd_list, ua_list)
                 if prev_reward-reward < 2e-3:
@@ -748,11 +745,11 @@ if __name__ =="__main__":
     MAX_ALTITUDE = 200 # meter
     GRID_SIZE = 45 # meter
     # Constant for user
-    NUM_UE = 70
+    NUM_UE = 20
     NUM_NODE_ITER = 0
     TIME_WINDOW_SIZE = [4, 4]
     TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
-    DATARATE_WINDOW = [0, 0] # Requiring datarate Mb/s
+    DATARATE_WINDOW = [20, 20] # Requiring datarate Mb/s
     INITIAL_DATA = 10 # Mb
     TREE_DEPTH = 1
     MAX_DATA = 99999999
