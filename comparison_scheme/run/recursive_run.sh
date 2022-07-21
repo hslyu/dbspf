@@ -23,6 +23,6 @@ do
 		continue
 	fi
 	END=`expr $START + $NUM_EXP`
-	tmux send-keys -t $sess:$window "python $dir/no_GBS_iterative_ga_optimizer.py --index_start $START --index_end $END --datarate $DATARATE" Enter
+	tmux send-keys -t $sess:$window "python $dir/no_GBS_iterative_ga_optimizer.py --index_start $START --index_end $END --datarate $DATARATE --result_path /home/hslyu/result-twc-rate-tw8" Enter
 	START=$END
 done
