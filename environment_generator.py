@@ -24,7 +24,7 @@ MAX_ALTITUDE = 200 # meter
 GRID_SIZE = 40 # meter
 # Constant for user
 NUM_UE = 200
-TIME_WINDOW_SIZE = [8,8] 
+TIME_WINDOW_SIZE = [4,8] 
 TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
 #DATARATE_WINDOW = [0,0] # Requiring datarate Mb/s
 INITIAL_DATA = 10 # Mb
