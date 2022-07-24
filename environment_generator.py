@@ -66,7 +66,7 @@ def environment_generator(parser):
         # Initial position of UAV
         env_dict['root_position'] = [random.randint(0, args.map_width)//args.grid_size*args.grid_size,
                              random.randint(0, args.map_width)//args.grid_size*args.grid_size,
-                             200]
+                             random.randint(150, args.max_altitude)//args.grid_size*args.grid_size]
 #                             random.randint(args.min_altitude, args.max_altitude)//args.grid_size*args.grid_size]
         # Make user list
         user_list = []
