@@ -17,12 +17,11 @@ current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfra
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
 
+#base="/home/hslyu/storage/ours-rate-ue20-tw8"
+#comparison_mode=False
 comparison_mode=True
-#base="/home/hslyu/storage/result_fixed_07_14/"
-#name="fixed"
-base="/home/hslyu/storage/result_circular_07_14/"
-name="circular"
-#base="/home/hslyu/storage/result_ours_07_12/tw20_user20/"
+#base="/home/hslyu/storage/circular-rate-ue20-tw8"
+base="/home/hslyu/storage/fixed-rate-ue20-tw8"
 
 num_env=150
 def open_json(file_path):
@@ -56,7 +55,7 @@ if __name__=="__main__":
         depth = 1
         coverage_list = []
         for d in range(0,11):
-            root = base+f"datarate_{d}"
+            root = os.path.join(base,f"datarate_{d}")
             coverage = parse(root, depth)
             coverage_list.append(coverage)
             print(coverage)
@@ -64,11 +63,11 @@ if __name__=="__main__":
         plt.legend(loc='best')
 
     else:
-        for depth in range(1,8):
+        for depth in range(1,6,2):
             coverage_list = []
             print(f"-----------depth: {depth}-------------")
             for d in range(0,11):
-                root = base+f"datarate_{d}/user_20/depth_{depth}"
+                root = os.path.join(base,f"datarate_{d}/user_20/depth_{depth}")
                 coverage = parse(root, depth)
                 coverage_list.append(coverage)
                 print(coverage)

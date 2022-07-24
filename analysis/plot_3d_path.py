@@ -17,6 +17,9 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
 from utils import open_json
 
+idx=3
+default_path = f'/storage/hslyu/ours-user-rate5-tw4/user_80/depth_5/env_{idx:04d}-depth_5-ue_80.json'
+
 class Annotation3D(Annotation):	#{{{
     '''
     https://gist.github.com/hslyu/16b590fc12dfbf455a323a780053eb95
@@ -42,7 +45,7 @@ class Annotation3D(Annotation):	#{{{
 def get_parser():
     parser = argparse.ArgumentParser(description='Plot 3d trajectory from result json file',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-f', '--file_path', type=str, help='Path of the result json file')
+    parser.add_argument('-f', '--file_path', default=default_path, type=str, help='Path of the result json file')
     return parser
 
 def plot_3d_graph(file_path):
@@ -91,4 +94,14 @@ if __name__=='__main__':
         parser.error(f'Usage: {__file__} --file_path <file_path>')
         parser.error(f'Usage: {__file__} --file_path <file_path>')
 
-    plot_3d_graph(args.file_path)
+#    plot_3d_graph(args.file_path)
+    for idx in range(150): 
+#        for d in range(1,6,2):
+#            default_path = f'/storage/hslyu/ours-user-rate5-tw4/user_80/depth_{d}/env_{idx:04d}-depth_{d}-ue_80.json'
+        d=3
+        default_path = f'/storage/hslyu/ours-rate-ue20-tw8/datarate_8/user_20/depth_{d}/env_{idx:04d}-depth_{d}-ue_20.json'
+        print(default_path)
+        plot_3d_graph(default_path)
+        default_path = f'/storage/hslyu/ours-rate-ue20-tw4/datarate_8/user_20/depth_{d}/env_{idx:04d}-depth_{d}-ue_20.json'
+        print(default_path)
+        plot_3d_graph(default_path)

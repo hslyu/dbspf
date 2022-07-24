@@ -17,8 +17,12 @@ current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfra
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
 
+#base="/home/hslyu/storage/ours-rate-ue20-tw8"
+#comparison_mode=False
+comparison_mode=True
+#base="/home/hslyu/storage/circular-rate-ue20-tw8"
+base="/home/hslyu/storage/fixed-rate-ue20-tw8"
 
-base="/home/hslyu/storage/result_ours_07_12/tw20_user20/"
 num_env=150
 def open_json(file_path):
     with open(file_path, encoding='utf-8') as f:
@@ -47,14 +51,17 @@ if __name__=="__main__":
     plt.xlabel("datarate")
     plt.ylabel("pf")
 
-    for depth in range(1,7):
+    for depth in range(1,6,2):
         pf_list = []
-        for d in range(0,1):
-            root = base+f"datarate_{d}/user_20/depth_{depth}"
+        for d in range(0,11):
+            if comparison_mode:
+                root = os.path.join(base,f"datarate_{d}")
+            else:
+                root = os.path.join(base,f"datarate_{d}/user_20/depth_{depth}")
             pf = parse(root, depth)
             pf_list.append(pf)
             print(pf)
-#        print(f"-----------depth: {depth}-------------")
+        print(f"-----------depth: {depth}-------------")
         plt.plot(pf_list, label=f"depth_{depth}")
         plt.legend(loc='best')
 
