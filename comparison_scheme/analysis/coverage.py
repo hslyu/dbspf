@@ -18,7 +18,7 @@ sys.path.insert(0, parent_dir)
 import system_model as sm
 
 num_env=150
-def parse(root: str="/home/hslyu/storage/result_twc21_07_10/tw20_user20"):
+def parse(root: str="/home/hslyu/storage/twc-rate-ue20-tw8"):
     list_coverage = []
 
     for i in range(0,11):
@@ -38,8 +38,11 @@ def parse(root: str="/home/hslyu/storage/result_twc21_07_10/tw20_user20"):
                 else:
                     k -= 1
 
-            list_serviced = [ue.serviced_data for ue in UBS.list_ue if ue.serviced_data != 10]
+            list_serviced = [ue.serviced_data for ue in UBS.list_ue if ue.serviced_data < 10.5]
             coverage += len(list_serviced)/len(UBS.list_ue)
+            if i==0:
+                print([(ue.serviced_data-10)*100//1/100 for ue in UBS.list_ue])
+            
 
         list_coverage.append(coverage/num_env)
 

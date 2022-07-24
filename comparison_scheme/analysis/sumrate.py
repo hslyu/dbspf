@@ -19,7 +19,7 @@ import system_model as sm
 import numpy as np
 
 num_env=150
-def parse(root: str="/home/hslyu/storage/result_twc21_07_10/tw20_user20"):
+def parse(root: str="/home/hslyu/storage/twc-rate-ue20-tw8"):
     list_sumrate = []
 
     for i in range(0,11):
