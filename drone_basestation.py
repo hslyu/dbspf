@@ -125,6 +125,7 @@ class TrajectoryNode:#{{{
             self.user_list[idx].datarate = user.datarate
             self.user_list[idx].max_data = user.max_data
             self.user_list[idx].total_data = user.total_data
+            self.user_list[idx].pathloss = self.get_pathloss(self.position, user)
             if self.current_time % user.time_period == 0:
                 self.user_list[idx].received_data = 0
             else:
@@ -262,9 +263,67 @@ class TrajectoryNode:#{{{
             reward_gbs = self.objective_function([user.psd for user in ua_list], ua_list)
 
         return reward+reward_gbs
-    
 
-    def init_ua_ra(self, user_pool=None, isGBS=False):
+#    def init_ua_ra(self, user_pool=None, isGBS=False):
+    def init_ua_ra_linear(self, user_pool=None, isGBS=False):
+        def ra_objective(sorted_valid_user_list, ra_list):
+            if isGBS:
+                return sum([math.log(1+BANDWIDTH_ORIG*ra*user.se_gbs/user.total_data) if user.time_start <= self.current_time <= user.time_end else 0 for user, ra in zip(sorted_valid_user_list, ra_list)])
+            else:
+                return sum([math.log(1+BANDWIDTH_ORIG*ra*user.se/user.total_data) if user.time_start <= self.current_time <= user.time_end else 0 for user, ra in zip(sorted_valid_user_list, ra_list)])
+            
+        def sort_key(user):
+            # TODO: user.datarate is weird: user.datarate/user.se?
+            if isGBS:
+                return 1./(user.total_data + user.datarate)/user.se
+            else:
+                return 1./(user.total_data + user.datarate)/user.se
+
+        if isGBS:
+            if user_pool == None:
+                print("Invalid user pool")
+                exit()
+            user_pool = user_pool
+            sorted_valid_user_list = sorted(user_pool, key=sort_key, reverse=True)
+            sorted_valid_user_list = [user for user in sorted_valid_user_list if user.datarate / user.se_gbs < BANDWIDTH]
+            ra_filler = [user.total_data / user.se_gbs for user in sorted_valid_user_list]
+            ra_min = [user.datarate / user.se_gbs for user in sorted_valid_user_list]
+        else:
+            user_pool = self.get_valid_user()
+            sorted_valid_user_list = sorted(user_pool, key=sort_key, reverse=True)
+            sorted_valid_user_list = [user for user in sorted_valid_user_list if user.datarate / user.se < BANDWIDTH]
+            ra_filler = [user.total_data / user.se for user in sorted_valid_user_list]
+            ra_min = [user.datarate / user.se for user in sorted_valid_user_list]
+
+        max_ra_list = []
+        max_objective = -999999
+        # Break flag for double for-loop
+        is_infeasible = False
+        for i in range(len(sorted_valid_user_list)):
+#            ra_list = [( BANDWIDTH + sum(ra_filler[:i+1]) ) / (i+1) - ra_filler[idx] for idx in range(i+1)] + [0] * ( len(self.user_list) - i - 1 )
+            ra_list = [( BANDWIDTH + sum(ra_filler[:i+1]) ) / (i+1) - ra_filler[idx] for idx in range(i+1)] 
+
+            # Check feasibility of the requested datarate
+            for idx in range(i+1):
+                if ra_min[idx] > ra_list[idx]:
+                    is_infeasible = True
+            if is_infeasible:
+                break
+
+            if max_objective < ra_objective(sorted_valid_user_list, ra_list):
+                max_objective = ra_objective(sorted_valid_user_list, ra_list)
+                max_ra_list = ra_list
+        
+        candidate_user_list = []
+        for user, ra in zip(sorted_valid_user_list, max_ra_list):
+            user.ra = ra
+            if ra > 0:
+                candidate_user_list.append(user)
+
+        return candidate_user_list, max_ra_list
+
+    def init_ua_ra_opt(self, user_pool=None, isGBS=False):
+#    def init_ua_ra(self, user_pool=None, isGBS=False):
         def ra_objective(sorted_valid_user_list, ra_list):
             if isGBS:
                 return sum([math.log(1+ra*user.se_gbs/user.total_data) if user.time_start <= self.current_time <= user.time_end else 0 for user, ra in zip(sorted_valid_user_list, ra_list)])
@@ -285,7 +344,7 @@ class TrajectoryNode:#{{{
         max_objective = -1e6
 
         valid_user_list = user_pool if isGBS else self.get_valid_user() 
-        for i in range(len(valid_user_list)**2):
+        for i in range(2**len(valid_user_list)):
             candidate_user_list = []
             for j, user in enumerate(valid_user_list):
                 if i & 1<<j:
@@ -313,6 +372,79 @@ class TrajectoryNode:#{{{
             user.ra = ra
 
         return max_ua_list, max_ra_list
+
+#    def init_ua_ra_local(self, user_pool=None, isGBS=False):
+    def init_ua_ra(self, user_pool=None, isGBS=False):
+        def ra_objective(user_list, ra_list):
+            if isGBS:
+                return sum([math.log(1+ra*user.se_gbs/user.total_data) if user.time_start <= self.current_time <= user.time_end else 0 for user, ra in zip(user_list, ra_list)])
+            else:
+                return sum([math.log(1+ra*user.se/user.total_data) if user.time_start <= self.current_time <= user.time_end else 0 for user, ra in zip(user_list, ra_list)])
+
+        def max_waterfilling(v, user):
+            if isGBS:
+                return max(user.datarate/user.se_gbs, v - user.total_data/user.se_gbs)
+            else:
+                return max(user.datarate/user.se, v - user.total_data/user.se)
+
+        def sum_bandwidth(v, user_list):
+            return sum([max_waterfilling(v, user) for user in user_list])-BANDWIDTH
+
+        def ra_list(user_list):
+            if user_list == []:
+                return []
+            v_min = 0
+            v_max = 10000
+            while abs(sum_bandwidth(v_min, user_list) - sum_bandwidth(v_max, user_list)) > 1e-4:
+                v_new = ( v_min + v_max ) / 2
+                if sum_bandwidth(v_new, user_list) < 0:
+                    v_min = v_new
+                else:
+                    v_max = v_new
+            ra_list = [max_waterfilling(v_min, user) for user in user_list]
+            return ra_list
+
+        def recursive_ua(associated_user_list, candidate_user_list):
+            max_user_list = associated_user_list
+            max_ra_list = ra_list(associated_user_list)
+            max_objective = ra_objective(max_user_list, max_ra_list)
+            max_idx = None
+            no_change = True
+            for idx, user in enumerate(candidate_user_list):
+                tmp_user_list = associated_user_list + [user]
+
+                if sum([user.datarate / user.se_gbs if isGBS else user.datarate / user.se for user in tmp_user_list]) > BANDWIDTH:
+                    continue
+
+                tmp_ra_list = ra_list(tmp_user_list)
+
+                tmp_obj = ra_objective(tmp_user_list, tmp_ra_list)
+                if max_objective < tmp_obj:
+                    max_objective = tmp_obj
+                    max_user_list = tmp_user_list
+                    max_ra_list = tmp_ra_list
+                    max_idx = idx
+
+            if max_idx != None:
+                no_change = False
+                del candidate_user_list[max_idx]
+
+            return max_user_list, max_ra_list, candidate_user_list, no_change
+
+        associated_user_list = []
+        candidate_user_list = user_pool if isGBS else self.get_valid_user() 
+        while True:
+            prev_associated_user_list = associated_user_list
+            associated_user_list, associated_ra_list, candidate_user_list, no_change = recursive_ua(associated_user_list, candidate_user_list)
+            if no_change:
+                break
+
+        for user, ra in zip(associated_user_list, associated_ra_list):
+            user.ra = ra
+
+        return associated_user_list, associated_ra_list
+
+
 
     def kkt_ra(self, user_list):#{{{
         """
@@ -743,15 +875,18 @@ if __name__ =="__main__":
     MAP_WIDTH = 600 # meter, Both X and Y axis width
     MIN_ALTITUDE = 50 # meter
     MAX_ALTITUDE = 200 # meter
-    GRID_SIZE = 45 # meter
+    GRID_SIZE = 40 # meter
     # Constant for user
-    NUM_UE = 20
+    NUM_UE = 80
     NUM_NODE_ITER = 0
+#    TIME_WINDOW_SIZE = [8, 8]
     TIME_WINDOW_SIZE = [4, 4]
+#    TIME_WINDOW_SIZE = [2, 2]
+#    TIME_WINDOW_SIZE = [1, 1]
     TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
-    DATARATE_WINDOW = [20, 20] # Requiring datarate Mb/s
+    DATARATE_WINDOW = [5, 5] # Requiring datarate Mb/s
     INITIAL_DATA = 10 # Mb
-    TREE_DEPTH = 1
+    TREE_DEPTH = 5
     MAX_DATA = 99999999
 
     pf_proposed = 0
@@ -761,6 +896,7 @@ if __name__ =="__main__":
     num_exp = 10
     avg_time = 0
 
+    import copy
 #    gbs = GroundBaseStation()
     for j in range(num_exp):
         position = [random.randint(0, MAP_WIDTH)//10*10,
@@ -780,7 +916,7 @@ if __name__ =="__main__":
                     random.randint(0, time_period-tw_size), tw_size, time_period, # time window
                     datarate, INITIAL_DATA, MAX_DATA) # data
             user_list.append(user)
-        root.user_list = user_list
+        root.user_list = copy.deepcopy(user_list)
 
         tree = TrajectoryTree(root, VEHICLE_VELOCITY,\
                                 TIME_STEP, GRID_SIZE,\
@@ -796,7 +932,7 @@ if __name__ =="__main__":
 
         for user in user_list: 
             user.total_data = INITIAL_DATA
-        PATH2 = circular_path(100, user_list)
+        PATH2 = circular_path(100, copy.deepcopy(user_list))
         user_list = PATH2[-1].user_list
         tmp_pf_circular = sum([math.log(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
         tmp_sum_circular = sum([user.total_data-INITIAL_DATA for user in user_list if user.total_data != INITIAL_DATA])
@@ -804,7 +940,7 @@ if __name__ =="__main__":
 
         for user in user_list: 
             user.total_data = INITIAL_DATA
-        PATH3 = random_path(user_list)
+        PATH3 = random_path(copy.deepcopy(user_list))
         user_list = PATH3[-1].user_list
         tmp_pf_random = sum([math.log(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
         tmp_sum_random = sum([user.total_data-INITIAL_DATA for user in user_list if user.total_data != INITIAL_DATA])
@@ -812,13 +948,13 @@ if __name__ =="__main__":
 
         for user in user_list: 
             user.total_data = INITIAL_DATA
-        PATH4 = fixed_path(user_list)
+        PATH4 = fixed_path(copy.deepcopy(user_list))
         user_list = PATH4[-1].user_list
         tmp_pf_fixed = sum([math.log(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
         tmp_sum_fixed = sum([user.total_data-INITIAL_DATA for user in user_list if user.total_data != INITIAL_DATA])
         pf_fixed += tmp_pf_fixed
         print(f'Iteration: {j}, Proposed: {tmp_pf_proposed: .2f}, Circular: {tmp_pf_circular: .2f}, random: {tmp_pf_random: .2f}, fixed: {tmp_pf_fixed: .2f}')
-        print(f'Iteration: {j}, Proposed: {tmp_sum_proposed: .2f}, Circular: {tmp_sum_circular: .2f}, random: {tmp_sum_random: .2f}, fixed: {tmp_sum_fixed: .2f}')
+#        print(f'Iteration: {j}, Proposed: {tmp_sum_proposed: .2f}, Circular: {tmp_sum_circular: .2f}, random: {tmp_sum_random: .2f}, fixed: {tmp_sum_fixed: .2f}')
     print(f'DFS trajectory pf: {pf_proposed/num_exp}')
     print(f'Circular trajectory pf: {pf_circular/num_exp}')
     print(f'Random trajectory pf: {pf_random/num_exp}')
