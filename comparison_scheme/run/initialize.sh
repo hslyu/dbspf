@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [ "$#" -ne 1 ];
+if [ "$#" -eq 0 ];
 then 
-	echo "usage: $0 <session name>"
+	echo "usage: $0 <session name> <number of sessions>"
 	exit
 fi	
 
@@ -11,7 +11,13 @@ dir="/home/hslyu/dbspf/comparison_scheme"
 
 tmux new-session -d -s "$sess" -c "$dir"
 
-NUM_SESS=10
+if [ -z "$2" ]
+then
+	NUM_SESS = $2
+else
+	NUM_SESS = 10
+fi
+
 WINDOWS=$(seq 0 $NUM_SESS)
 for window in $WINDOWS
 do
