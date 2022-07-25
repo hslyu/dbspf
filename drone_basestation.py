@@ -11,7 +11,7 @@ from dataclasses import dataclass
 # Constant for wirless communication{{{
 FREQUENCY = 2.0*1e9 # Hz
 LIGHTSPEED = 3*1e8 # m/s
-BANDWIDTH_ORIG = 18 # MHz
+BANDWIDTH_ORIG = 2 # MHz
 POWER_ORIG = 200 # mW
 BANDWIDTH = 1. # <BANDWIDTH_ORIG> MHz per unit
 POWER = 1. # 200 mW per unit
@@ -877,16 +877,16 @@ if __name__ =="__main__":
     MAX_ALTITUDE = 200 # meter
     GRID_SIZE = 40 # meter
     # Constant for user
-    NUM_UE = 80
+    NUM_UE = 20
     NUM_NODE_ITER = 0
 #    TIME_WINDOW_SIZE = [8, 8]
     TIME_WINDOW_SIZE = [4, 4]
 #    TIME_WINDOW_SIZE = [2, 2]
 #    TIME_WINDOW_SIZE = [1, 1]
     TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
-    DATARATE_WINDOW = [5, 5] # Requiring datarate Mb/s
+    DATARATE_WINDOW = [10, 10] # Requiring datarate Mb/s
     INITIAL_DATA = 10 # Mb
-    TREE_DEPTH = 5
+    TREE_DEPTH = 3
     MAX_DATA = 99999999
 
     pf_proposed = 0
