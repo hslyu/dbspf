@@ -11,7 +11,7 @@ dir="/home/hslyu/dbspf/comparison_scheme"
 
 tmux new-session -d -s "$sess" -c "$dir"
 
-NUM_SESS=25
+NUM_SESS=10
 WINDOWS=$(seq 0 $NUM_SESS)
 for window in $WINDOWS
 do

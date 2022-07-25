@@ -11,7 +11,7 @@ NUM_EXP=$1
 START=$2
 sess="PF"
 
-NUM_SESS=25
+NUM_SESS=10
 WINDOWS=$(seq 0 $NUM_SESS)
 
 dir="~/dbspf/comparison_scheme"
