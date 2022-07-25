@@ -13,9 +13,9 @@ tmux new-session -d -s "$sess" -c "$dir"
 
 if [ -z "$2" ]
 then
-	NUM_SESS = $2
+	NUM_SESS=10
 else
-	NUM_SESS = 10
+	NUM_SESS=$2
 fi
 
 WINDOWS=$(seq 0 $NUM_SESS)
