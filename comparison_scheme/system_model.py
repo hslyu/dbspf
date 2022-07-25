@@ -19,7 +19,7 @@ import pickle
 class Parameters:
     # Some numbers
     num_ue: int=20
-    num_subcarriers: int=100
+    num_subcarriers: int=10
     num_timeslots: int=20
     # Map
     map_width: int=600 # meter
