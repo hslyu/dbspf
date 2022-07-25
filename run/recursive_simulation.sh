@@ -10,7 +10,7 @@ START=$1
 END=$2
 
 num_user=20
-for datarate in $(seq 0 2 10)
+for datarate in $(seq 0 10)
 do
 	for depth in $(seq 1 2 5)
 	do
