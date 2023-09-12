@@ -14,8 +14,8 @@ import os,sys,inspect
 sys.path.append('/home/hslyu/dbspf/comparison_scheme')
 import system_model as sm
 
-num_env=100
-def parse(root: str="/home/hslyu/storage/twc-user-rate5-tw4"):
+num_env=120
+def parse(root: str="/home/hslyu/storage/bw20/twc-user"):
     list_jfi = []
 
     for user in range(10,81,10):

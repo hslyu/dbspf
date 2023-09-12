@@ -96,12 +96,8 @@ if __name__=='__main__':
 
 #    plot_3d_graph(args.file_path)
     for idx in range(150): 
-#        for d in range(1,6,2):
-#            default_path = f'/storage/hslyu/ours-user-rate5-tw4/user_80/depth_{d}/env_{idx:04d}-depth_{d}-ue_80.json'
-        d=3
-        default_path = f'/storage/hslyu/ours-rate-ue20-tw8/datarate_8/user_20/depth_{d}/env_{idx:04d}-depth_{d}-ue_20.json'
-        print(default_path)
-        plot_3d_graph(default_path)
-        default_path = f'/storage/hslyu/ours-rate-ue20-tw4/datarate_8/user_20/depth_{d}/env_{idx:04d}-depth_{d}-ue_20.json'
-        print(default_path)
-        plot_3d_graph(default_path)
+        for d in range(1,6,2):
+            idx=134
+            default_path = f'/storage/hslyu/bw2/ours-rate/datarate_10/user_20/depth_{d}/env_{idx:04d}-depth_{d}-ue_20.json'
+            print(default_path)
+            plot_3d_graph(default_path)

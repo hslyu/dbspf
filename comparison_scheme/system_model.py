@@ -344,10 +344,10 @@ if __name__=="__main__":
             print('\t---------- subcarrier_UBS')
 
             for subcarrier in user.list_subcarrier_UBS:
-                print(f'\t\t{subcarrier.alpha = } ')
-                print(f'\t\t{subcarrier.frequency = } (GHz)')
-                print(f'\t\t{subcarrier.power = } (dB)')
-                print(f'\t\t{subcarrier.pathloss = } (dB)')
+#                print(f'\t\t{subcarrier.alpha = } ')
+#                print(f'\t\t{subcarrier.frequency = } (GHz)')
+#                print(f'\t\t{subcarrier.power = } (dB)')
+#                print(f'\t\t{subcarrier.pathloss = } (dB)')
                 print(f'\t\t{subcarrier.channel = } (dB)')
                 print('\t\t----------')
 
@@ -361,12 +361,12 @@ if __name__=="__main__":
 #                print('\t\t----------')
 
     param.num_ue = 2
-    param.num_subcarriers = 10
+    param.num_subcarriers = 100
 
-    UBS, GBS, list_ue = initialize_network('/home/hslyu/dbspf/data/env/env_0000.json')
+    UBS, GBS, list_ue = initialize_network('/home/hslyu/dbspf/data/env/env_0001.json')
 #    UBS, GBS, list_ue = initialize_network()
 #    los_prob_approximation_test()
-#    initialization_validity_check()
+    initialization_validity_check()
     user = list_ue[0]
 #    print(user.list_subcarrier_UBS[0].pathloss)
     print(-sum([sub.channel for sub in user.list_subcarrier_UBS])/1000)

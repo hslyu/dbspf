@@ -18,7 +18,7 @@ sys.path.insert(0, parent_dir)
 import system_model as sm
 
 num_env=150
-def parse(root: str="/home/hslyu/storage/twc-rate-ue20-tw8/"):
+def parse(root: str="/home/hslyu/storage/bw20/twc-rate/"):
     list_jfi = []
 
     for i in range(0,11):

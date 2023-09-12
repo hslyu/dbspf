@@ -17,11 +17,11 @@ current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfra
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
 
-#base="/home/hslyu/storage/ours-rate-ue20-tw8"
+#base="/home/hslyu/storage/bw20/ours-rate"
 #comparison_mode=False
 comparison_mode=True
-#base="/home/hslyu/storage/circular-rate-ue20-tw8"
-base="/home/hslyu/storage/fixed-rate-ue20-tw8"
+#base="/home/hslyu/storage/bw20/circular-rate"
+base="/home/hslyu/storage/bw20/fixed-rate"
 
 num_env=150
 def open_json(file_path):
