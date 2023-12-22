@@ -17,9 +17,12 @@ def get_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "-n", "--num_ue", type=int, default=-1, help="Number of UEs range(10,81,10)"
+        "-m",
+        "--mode",
+        type=str,
+        default="",
+        choices=["user", "rate"],
     )
-    parser.add_argument("-r", "--rate", type=int, default=-1, help="Rate range(0,11)")
     return parser
 
 
@@ -35,6 +38,9 @@ def compute_pf(user_list, initial_data):
 
 
 def train(num_ue, rate, writer):
+    print(
+        f"-------- Training start: num_ue={num_ue}, rate={rate}, bw={env.db.BANDWIDTH_ORIG} --------"
+    )
     drone_env = env.DroneDQNEnv(num_ue=num_ue, datarate_window=[rate, rate])
     state = drone_env.reset()
     input_dim = state.shape[0]
@@ -53,6 +59,7 @@ def train(num_ue, rate, writer):
         buffer_size=10000,
     )
 
+    best_reward = -math.inf
     num_episodes = 5000
     avg_pf = 0
     avg_reward = 0
@@ -62,24 +69,28 @@ def train(num_ue, rate, writer):
             print(
                 f"Episode: {eps_idx}, PF: {avg_pf/print_period:.3f}, reward: {avg_reward/20/print_period:.3f}, loss: {drone_agent.latest_loss:.3f}, epsilon: {drone_agent.epsilon:.2f}"
             )
-            drone_agent.save_network(
-                f"checkpoints/bw-{env.db.BANDWIDTH_ORIG}/ue-{num_ue}_rate-{rate}.pt"
-            )
+            if avg_reward > best_reward:
+                best_reward = avg_reward
+                drone_agent.save_network(
+                    f"checkpoints/bw-{env.db.BANDWIDTH_ORIG}/ue-{num_ue}_rate-{rate}.pt"
+                )
             avg_pf = 0
             avg_reward = 0
         state = drone_env.reset()
+        eps_reward = 0
         while True:
             action = drone_agent.act(state)
             next_state, reward, done, _ = drone_env.step(action)
             drone_agent.step(state, action, reward, next_state, done)
             state = next_state
-            avg_reward += reward
+            eps_reward += reward
             if done:
                 break
         pf = compute_pf(drone_env.current_node.user_list, drone_env.initial_data)
         avg_pf += pf
+        avg_reward += eps_reward
         writer.add_scalar("PF", pf, eps_idx)
-        writer.add_scalar("Reward", avg_reward, eps_idx)
+        writer.add_scalar("Reward", eps_reward, eps_idx)
         writer.add_scalar("Loss", drone_agent.latest_loss, eps_idx)
 
 
@@ -88,17 +99,21 @@ def main():
     args = parser.parse_args()
 
     bandwidth = env.db.BANDWIDTH_ORIG
-    num_ue = args.num_ue if args.num_ue != -1 else 20
-    rate = args.rate if args.rate != -1 else 5
 
     # Initialize TensorBoardX SummaryWriter with dynamic directory name
-    log_dir = create_directory_name(bandwidth, num_ue, rate)
-    writer = tbx.SummaryWriter(log_dir)
 
-    if args.num_ue != -1:
-        train(num_ue=args.num_ue, rate=5, writer=writer)
-    if args.rate != -1:
-        train(num_ue=20, rate=args.rate, writer=writer)
+    if args.mode == "user":
+        rate = 5
+        for num_ue in range(10, 81, 10):
+            log_dir = create_directory_name(bandwidth, num_ue, rate)
+            writer = tbx.SummaryWriter(log_dir)
+            train(num_ue=num_ue, rate=rate, writer=writer)
+    elif args.mode == "rate":
+        num_ue = 20
+        for rate in range(0, 11):
+            log_dir = create_directory_name(bandwidth, num_ue, rate)
+            writer = tbx.SummaryWriter(log_dir)
+            train(num_ue=num_ue, rate=rate, writer=writer)
 
 
 if __name__ == "__main__":

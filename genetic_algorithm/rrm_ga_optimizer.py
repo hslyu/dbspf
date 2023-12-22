@@ -1,3 +1,4 @@
+import copy
 import math
 import random
 import sys
@@ -32,6 +33,67 @@ STEP_SIZE = 1e-3
 THRESHOLD = 1e-8
 # etc
 INF = 1e8 - 1
+
+
+def get_rrm_reward(node: db.TrajectoryNode):
+    user_list = node.get_valid_user()
+
+    num_generations = 10000
+    num_parents_mating = 20
+    sol_per_pop = 100
+    num_genes = len(user_list) * 3
+
+    ua_bound = [0, 1]
+    ra_bound = {"low": 0.1, "high": 1, "step": 0.01}
+    pc_bound = {"low": 0.75, "high": 1.25, "step": 0.001}
+    gene_space = []
+    gene_type = []
+    for _ in range(len(user_list)):
+        gene_space.append(ua_bound)
+        gene_type.append(int)
+    for _ in range(len(user_list)):
+        gene_space.append(ra_bound)
+        gene_type.append(float)
+    for _ in range(len(user_list)):
+        gene_space.append(pc_bound)
+        gene_type.append(float)
+
+    init_node = db.TrajectoryNode(node.position)
+    init_node.user_list = copy.deepcopy(node.user_list)
+    init_node.current_time = node.current_time
+    reward = init_node.get_reward()
+    user_list = init_node.get_valid_user()
+    ua_list = [1 if user.ra > 0 else 0 for user in user_list]
+    ra_list = [user.ra / 10.001 for user in user_list]
+    psd_list = [user.psd for user in user_list]
+    init_gene = ua_list + ra_list + psd_list
+    init_ua = np.random.randint(0, 1, size=(sol_per_pop, len(user_list)))
+    init_ra = np.random.uniform(0, 1, size=(sol_per_pop, len(user_list)))
+    init_pc = np.random.uniform(0.75, 1.25, size=(sol_per_pop, len(user_list)))
+    initial_population = np.concatenate((init_ua, init_ra, init_pc), axis=1)
+    for i in range(1):
+        initial_population[i] = init_gene
+
+    global last_fitness
+    last_fitness = 0
+
+    ga_instance = pygad.GA(
+        num_generations=num_generations,
+        num_parents_mating=num_parents_mating,
+        fitness_func=fitness_func_factory(node),
+        sol_per_pop=sol_per_pop,
+        num_genes=num_genes,
+        gene_space=gene_space,
+        gene_type=gene_type,
+        mutation_probability=0.1,
+        # on_generation=callback_generation,
+        stop_criteria="saturate_500",
+        initial_population=initial_population,
+    )
+
+    ga_instance.run()
+    solution, solution_fitness, solution_idx = ga_instance.best_solution()
+    return solution_fitness
 
 
 def psd2snr(psd, pathloss):
@@ -71,10 +133,8 @@ def fitness_func_factory(node: db.TrajectoryNode):
         psd_list = np.array(solution[len(user_list) * 2 :])
 
         # Sum of power should be less than P.
-        ra_pc_mul_list = [ra * pc for ra, pc in zip(ra_list, psd_list)]
-        if sum(ra_pc_mul_list) > 1:
-            fitness = -INF
-            return fitness
+        while sum([ra * pc for ra, pc in zip(ra_list, psd_list)]) > 1:
+            psd_list = psd_list * 0.999
 
         for i, ua in enumerate(ua_list):
             if ua == 0:
@@ -84,8 +144,7 @@ def fitness_func_factory(node: db.TrajectoryNode):
             user.snr = psd2snr(psd_list[i], user.pathloss)
             user.se = snr2se(user.snr)
             if user.ra * user.se < user.datarate:
-                fitness = -INF
-                return fitness
+                user.ra = 0
 
         fitness = 0
         for ua, user in zip(ua_list, user_list):
@@ -102,7 +161,11 @@ def callback_generation(ga_instance):
         global last_fitness
         Fitness = ga_instance.best_solution()[1]
         Change = ga_instance.best_solution()[1] - last_fitness
-        print(f"{Generation = :02d}, {Fitness = :.3f}, {Change = :.3f}")
+        print(
+            f"{Generation = :02d}, {Fitness = :.3f}, {Change = :.8f}",
+            flush=True,
+            end="\r",
+        )
         last_fitness = ga_instance.best_solution()[1]
     else:
         pass
@@ -113,9 +176,9 @@ def main():
     min_altitude = 50
     max_altitude = 200
     max_timeslot = 20
-    num_ue = 40
+    num_ue = 80
     initial_data = 10
-    time_window_size = [8, 8]
+    time_window_size = [4, 8]
     time_period_size = [20, 20]
     datarate_window = [1, 1]
 
@@ -140,7 +203,7 @@ def main():
             tw_size,
             time_period,  # time window
             datarate,
-            initial_data,
+            initial_data * random.random(),
             max_data=99999,
         )  # data
         user_list.append(user)
@@ -148,7 +211,7 @@ def main():
     node = db.TrajectoryNode(position)
     node.user_list = user_list
     node.copy_user(user_list)
-    node.current_time = 0
+    node.current_time = 10
 
     user_list = node.get_valid_user()
 
@@ -185,7 +248,7 @@ def main():
         gene_type=gene_type,
         mutation_probability=0.1,
         callback_generation=callback_generation,
-        stop_criteria="saturate_500",
+        stop_criteria="saturate_1000",
     )
 
     ga_instance.run()

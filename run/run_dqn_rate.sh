@@ -11,7 +11,7 @@ datarate=$4
 bw=$5
 scheme=dqn
 
-for rate in $(seq 0 1 10)
+for rate in $(seq 9 1 10)
 do
 	python iterative_simulation.py --index_start $index_start --index_end $index_end --num_user $num_user --datarate $rate --mode $scheme --bandwidth $bw \
 		--result_path $HOME/storage/dbspf/bw${bw}/${scheme}-rate

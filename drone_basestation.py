@@ -8,10 +8,12 @@ import random
 import time
 from dataclasses import dataclass
 
+import numpy as np
+
 # Constant for wirless communication
 FREQUENCY = 2.0 * 1e9  # Hz
 LIGHTSPEED = 3 * 1e8  # m/s
-BANDWIDTH_ORIG = 10  # MHz
+BANDWIDTH_ORIG = 2  # MHz
 NUM_SUBCARRIER = BANDWIDTH_ORIG * 5
 SUBCARRIER_BANDWIDTH = 0.2  # MHz, 200 kHz
 POWER_ORIG = 200  # mW
@@ -257,7 +259,7 @@ class TrajectoryNode:
         self.serviced_ua_list = [user]
         return reward
 
-    def get_reward(self, num_iter=0):
+    def get_reward(self, num_iter=0, init_ua_ra_mode="local"):
         valid_user_list = self.get_valid_user()
 
         if valid_user_list == []:
@@ -276,7 +278,15 @@ class TrajectoryNode:
                 user.snr_gbs = self.psd2snr(user.psd, user.pathloss_gbs)
                 user.se_gbs = self.snr2se(user.snr_gbs)
 
-        ua_list, ra_list = self.init_ua_ra()
+        if init_ua_ra_mode == "local":
+            init_ua_ra = self.init_ua_ra_local
+        elif init_ua_ra_mode == "max_SINR":
+            init_ua_ra = self.init_ua_ra_max_SINR
+        elif init_ua_ra_mode == "linear":
+            init_ua_ra = self.init_ua_ra_linear
+        else:  # init_ua_ra_mode == "opt":
+            init_ua_ra = self.init_ua_ra_opt
+        ua_list, ra_list = init_ua_ra()
         # Get rid of zero ra
         ua_list = [user for user in ua_list if user.ra != 0]
         psd_list = self.kkt_psd(ua_list)
@@ -352,20 +362,23 @@ class TrajectoryNode:
         for idx in indices:
             discrete_ra_list[idx] += 1
 
+        reward = 0
         for user, ra, psd in zip(ua_list, discrete_ra_list, psd_list):
             user.ra = ra
             user.psd = psd
             user.serviced_time += 1
+            throughput = 0
             for _ in range(ra):
                 user.snr = self.psd2snr(user.psd, _rician_fading(user))
                 user.se = (
                     self.snr2se(user.snr) / BANDWIDTH_ORIG
                 )  # normalize the spectral efficiency
-                rate = SUBCARRIER_BANDWIDTH * user.se
-                user.received_data += rate
-                user.total_data += rate
+                throughput += SUBCARRIER_BANDWIDTH * user.se
+            reward += math.log(1 + throughput / user.total_data)
+            user.received_data += throughput
+            user.total_data += throughput
+        return reward
 
-    #    def init_ua_ra(self, user_pool=None, isGBS=False):
     def init_ua_ra_linear(self, user_pool=None, isGBS=False):
         def ra_objective(sorted_valid_user_list, ra_list):
             if isGBS:
@@ -453,7 +466,6 @@ class TrajectoryNode:
         return candidate_user_list, max_ra_list
 
     def init_ua_ra_max_SINR(self, user_pool=None, isGBS=False):
-        # def init_ua_ra(self, user_pool=None, isGBS=False):
         valid_user_list = self.get_valid_user()
         max_user = None
         max_pathloss = 9999
@@ -466,7 +478,6 @@ class TrajectoryNode:
         return [max_user], [1]
 
     def init_ua_ra_opt(self, user_pool=None, isGBS=False):
-        # def init_ua_ra(self, user_pool=None, isGBS=False):
         def ra_objective(sorted_valid_user_list, ra_list):
             if isGBS:
                 return sum(
@@ -550,8 +561,7 @@ class TrajectoryNode:
 
         return max_ua_list, max_ra_list
 
-    # def init_ua_ra_local(self, user_pool=None, isGBS=False):
-    def init_ua_ra(self, user_pool=None, isGBS=False):
+    def init_ua_ra_local(self, user_pool=None, isGBS=False):
         def ra_objective(user_list, ra_list):
             if isGBS:
                 return sum(
@@ -640,7 +650,6 @@ class TrajectoryNode:
         associated_user_list = []
         candidate_user_list = user_pool if isGBS else self.get_valid_user()
         while True:
-            prev_associated_user_list = associated_user_list
             (
                 associated_user_list,
                 associated_ra_list,

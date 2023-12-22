@@ -73,8 +73,8 @@ class Agent:
         self.step_count = 0
         self.learning_period = learning_period
         self.optimizer = torch.optim.Adam(self.local_q_network.parameters(), lr=lr)
-        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            self.optimizer, 100, eta_min=self.lr / 10
+        self.scheduler = torch.optim.lr_scheduler.StepLR(
+            self.optimizer, step_size=500, gamma=0.9
         )
         self.criterion = nn.MSELoss()
         # self.criterion = nn.SmoothL1Loss()
@@ -157,7 +157,7 @@ class Agent:
         loss.backward()
         nn.utils.clip_grad_norm_(self.local_q_network.parameters(), 1)
         self.optimizer.step()
-        # self.scheduler.step()
+        self.scheduler.step()
 
         # ------------------- update target network ------------------- #
         self.update_count += 1

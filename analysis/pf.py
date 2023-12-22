@@ -19,11 +19,13 @@ current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfra
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
 
-# base="/home/hslyu/storage/bw20/ours-rate"
+# base="/home/hslyu/storage/bw2/ours-rate"
 # comparison_mode=False
 comparison_mode = True
-# base="/home/hslyu/storage/bw20/circular-rate"
-base = "/home/hslyu/storage/dbspf/bw20/fixed-rate"
+# base="/home/hslyu/storage/bw2/circular-rate"
+# base = "/home/hslyu/storage/dbspf/bw2/fixed-rate"
+# base = "/home/hslyu/storage/dbspf/bw10/genetic-rate"
+base = "/home/hslyu/storage/dbspf/bw2/dqn-rate"
 
 num_env = 150
 
