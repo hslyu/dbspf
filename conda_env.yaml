@@ -33,5 +33,13 @@ dependencies:
   - xz=5.2.5=h7b6447c_0
   - zlib=1.2.11=h7f8727e_4
   - pip:
+    - cycler==0.11.0
+    - fonttools==4.33.3
+    - kiwisolver==1.4.3
+    - matplotlib==3.5.2
+    - packaging==21.3
+    - pillow==9.1.1
     - pygad==2.16.3
+    - pyparsing==3.0.9
+    - python-dateutil==2.8.2
 prefix: /home/hslyu/miniconda3/envs/drone
