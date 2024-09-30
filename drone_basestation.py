@@ -3,12 +3,10 @@
 # Depth first search(DFS) based UAV base station simulation code.
 # Author : Hyeonsu Lyu, POSTECH, Korea
 # Contact : hslyu4@postech.ac.kr
+import copy
 import math
 import random
 import time
-from dataclasses import dataclass
-
-import numpy as np
 
 # Constant for wirless communication
 FREQUENCY = 2.0 * 1e9  # Hz
@@ -40,7 +38,7 @@ INF = 1e8 - 1
 class User:
     def __init__(
         self,
-        uid=0,
+        id=0,
         position=[0, 0],
         time_start=0,
         tw_size=0,
@@ -48,10 +46,12 @@ class User:
         datarate=0,
         initial_data=0,
         max_data=0,
+        velocity=[0, 0],
     ):
         # ------------      Below attributes are constant       ------------ #
-        self.id = uid
+        self.id = id
         self.position = position
+        self.velocity = velocity
         self.time_start = time_start
         self.time_end = self.time_start + tw_size - 1
         self.time_period = time_period
@@ -60,10 +60,6 @@ class User:
         self.datarate = datarate
         self.max_data = max_data
         self.pathloss = 0.0
-        # ------------    Properties with ground base station   ------------ #
-        self.pathloss_gbs = 0
-        self.snr_gbs = 0
-        self.se_gbs = 0
         # ------------  Below attributes are control variables  ------------ #
         self.ra = 0.0
         self.psd = 0.0
@@ -89,55 +85,43 @@ class User:
         return "{}".format(self.id)
 
 
-@dataclass
-class GroundBaseStation:
-    def __init__(self):
-        self.position = [MAP_WIDTH / 2, MAP_WIDTH / 2, 30]
-        self.pathloss_alpha = 4
-
-    def user_channel(self, user: User):
-        return 10 * math.log10(self.distance(user)) * self.pathloss_alpha
-
-    def distance(self, user: User):
-        return (
-            (user.position[0] - self.position[0]) ** 2
-            + (user.position[1] - self.position[1]) ** 2
-            + 30**2
-        ) ** 0.5
-
-
 class TrajectoryNode:
-    def __init__(self, position, num_iter=0, parent=None, gbs=None):
+    def __init__(
+        self,
+        position,
+        num_iter=0,
+        parent: "TrajectoryNode" = None,
+        ra_list: list[float] = None,
+        psd_list: list[float] = None,
+    ):
         # value
         self.position = position
+        self.current_time = 0
         self.elapsed_time = 0.0
+        self.user_list = []
         # link
         self.leafs = []
         self.parent = parent
-        self.GBS = gbs
-        # for IITP computation
-        self.serviced_ua_list = []
 
         # If this node is root
         if self.parent is None:
-            self.current_time = 0
             self.reward = 0
         else:
-            # Copy parent information
             self.current_time = parent.current_time + 1
-            self.user_list = [User() for i in range(len(parent.user_list))]
+            self.user_list = [User() for _ in range(len(parent.user_list))]
             self.copy_user(parent.user_list)
 
-            # Ground base station
-            #            gbs = GroundBaseStation()
-            if self.GBS is not None:
-                for user in self.user_list:
-                    user.pathloss_gbs = self.GBS.user_channel(user)
-
-            # Calculate reward
-            self.reward = self.get_reward(num_iter)
-
-    #            self.reward = self.get_random_reward()
+            if not (ra_list is None or psd_list is None):
+                for user, ra, psd in zip(self.user_list, ra_list, psd_list):
+                    if ra == 0:
+                        continue
+                    user.ra = ra
+                    user.psd = psd
+                    user.serviced_time += 1
+                self.reward = self.discretized_rrm(self.user_list, ra_list, psd_list)
+            else:
+                self.reward = self.get_reward(num_iter)
+                # self.reward = self.get_random_reward()
 
     def __repr__(self):
         return "{}".format(self.position)
@@ -145,7 +129,11 @@ class TrajectoryNode:
     def copy_user(self, user_list):
         for idx, user in enumerate(user_list):
             self.user_list[idx].id = user.id
-            self.user_list[idx].position = user.position
+            self.user_list[idx].position = [
+                user.position[0] + user.velocity[0],
+                user.position[1] + user.velocity[1],
+            ]
+            self.user_list[idx].velocity = user.velocity
             self.user_list[idx].time_start = user.time_start
             self.user_list[idx].time_end = user.time_end
             self.user_list[idx].time_period = user.time_period
@@ -166,9 +154,14 @@ class TrajectoryNode:
         print("User throughput list (Mbps)")
         print(
             [
-                0
-                if user.serviced_time == 0
-                else ((user.total_data - 10) / (user.serviced_time)) * 100 // 1 / 100
+                (
+                    0
+                    if user.serviced_time == 0
+                    else ((user.total_data - 10) / (user.serviced_time))
+                    * 100
+                    // 1
+                    / 100
+                )
                 for user in self.user_list
             ]
         )
@@ -177,9 +170,6 @@ class TrajectoryNode:
         print(
             "====================================================================================="
         )
-
-    def __repr__(self):
-        return "{}".format(self.position)
 
     def get_random_reward(self):
         return random.randint(0, 10)
@@ -256,7 +246,6 @@ class TrajectoryNode:
         user.received_data += rate
         user.total_data += rate
         user.serviced_time += 1
-        self.serviced_ua_list = [user]
         return reward
 
     def get_reward(self, num_iter=0, init_ua_ra_mode="local"):
@@ -274,9 +263,6 @@ class TrajectoryNode:
             # SNR in dBm
             user.snr = self.psd2snr(user.psd, user.pathloss)
             user.se = self.snr2se(user.snr)
-            if self.GBS != None:
-                user.snr_gbs = self.psd2snr(user.psd, user.pathloss_gbs)
-                user.se_gbs = self.snr2se(user.snr_gbs)
 
         if init_ua_ra_mode == "local":
             init_ua_ra = self.init_ua_ra_local
@@ -304,32 +290,14 @@ class TrajectoryNode:
                     break
                 prev_reward = reward
 
-        # for user, ra, psd in zip(ua_list, ra_list, psd_list):
-        #     user.ra = ra
-        #     user.psd = psd
-        #     user.snr = self.psd2snr(user.psd, user.pathloss)
-        #     user.se = self.snr2se(user.snr)
-        #     rate = ra * user.se
-        #     self.user_list[user.id].received_data += rate
-        #     self.user_list[user.id].total_data += rate
-        #     user.serviced_time += 1
+        for user, ra, psd in zip(ua_list, ra_list, psd_list):
+            user.ra = ra
+            user.psd = psd
+            user.serviced_time += 1
 
-        self.discretized_rrm(ua_list, ra_list, psd_list)
-        self.serviced_ua_list = ua_list
+        reward = self.discretized_rrm(ua_list, ra_list, psd_list)
 
-        reward_gbs = 0
-        if self.GBS is not None:
-            ua_list_not_served = [
-                user for user in self.get_valid_user() if user not in ua_list
-            ]
-            ua_list, ra_list = self.init_ua_ra(ua_list_not_served, True)
-            #            print(ua_list_not_served, ua_list, ra_list)
-            psd_list = self.kkt_psd(ua_list)
-            reward_gbs = self.objective_function(
-                [user.psd for user in ua_list], ua_list
-            )
-
-        return reward + reward_gbs
+        return reward
 
     def discretized_rrm(self, ua_list, ra_list, psd_list):
         def _rician_fading(user):
@@ -364,76 +332,44 @@ class TrajectoryNode:
 
         reward = 0
         for user, ra, psd in zip(ua_list, discrete_ra_list, psd_list):
-            user.ra = ra
-            user.psd = psd
-            user.serviced_time += 1
             throughput = 0
             for _ in range(ra):
-                user.snr = self.psd2snr(user.psd, _rician_fading(user))
+                user.snr = self.psd2snr(psd, _rician_fading(user))
                 user.se = (
                     self.snr2se(user.snr) / BANDWIDTH_ORIG
                 )  # normalize the spectral efficiency
                 throughput += SUBCARRIER_BANDWIDTH * user.se
             reward += math.log(1 + throughput / user.total_data)
+            user.serviced_time += 1
             user.received_data += throughput
             user.total_data += throughput
         return reward
 
-    def init_ua_ra_linear(self, user_pool=None, isGBS=False):
+    def init_ua_ra_linear(self, user_pool=None):
         def ra_objective(sorted_valid_user_list, ra_list):
-            if isGBS:
-                return sum(
-                    [
-                        math.log(
-                            1 + BANDWIDTH_ORIG * ra * user.se_gbs / user.total_data
-                        )
-                        if user.time_start <= self.current_time <= user.time_end
-                        else 0
-                        for user, ra in zip(sorted_valid_user_list, ra_list)
-                    ]
-                )
-            else:
-                return sum(
-                    [
+            return sum(
+                [
+                    (
                         math.log(1 + BANDWIDTH_ORIG * ra * user.se / user.total_data)
                         if user.time_start <= self.current_time <= user.time_end
                         else 0
-                        for user, ra in zip(sorted_valid_user_list, ra_list)
-                    ]
-                )
+                    )
+                    for user, ra in zip(sorted_valid_user_list, ra_list)
+                ]
+            )
 
         def sort_key(user):
-            # TODO: user.datarate is weird: user.datarate/user.se?
-            if isGBS:
-                return 1.0 / (user.total_data + user.datarate) / user.se
-            else:
-                return 1.0 / (user.total_data + user.datarate) / user.se
+            return 1.0 / (user.total_data + user.datarate) / user.se
 
-        if isGBS:
-            if user_pool is None:
-                print("Invalid user pool")
-                exit()
-            user_pool = user_pool
-            sorted_valid_user_list = sorted(user_pool, key=sort_key, reverse=True)
-            sorted_valid_user_list = [
-                user
-                for user in sorted_valid_user_list
-                if user.datarate / user.se_gbs < BANDWIDTH
-            ]
-            ra_filler = [
-                user.total_data / user.se_gbs for user in sorted_valid_user_list
-            ]
-            ra_min = [user.datarate / user.se_gbs for user in sorted_valid_user_list]
-        else:
-            user_pool = self.get_valid_user()
-            sorted_valid_user_list = sorted(user_pool, key=sort_key, reverse=True)
-            sorted_valid_user_list = [
-                user
-                for user in sorted_valid_user_list
-                if user.datarate / user.se < BANDWIDTH
-            ]
-            ra_filler = [user.total_data / user.se for user in sorted_valid_user_list]
-            ra_min = [user.datarate / user.se for user in sorted_valid_user_list]
+        user_pool = self.get_valid_user()
+        sorted_valid_user_list = sorted(user_pool, key=sort_key, reverse=True)
+        sorted_valid_user_list = [
+            user
+            for user in sorted_valid_user_list
+            if user.datarate / user.se < BANDWIDTH
+        ]
+        ra_filler = [user.total_data / user.se for user in sorted_valid_user_list]
+        ra_min = [user.datarate / user.se for user in sorted_valid_user_list]
 
         max_ra_list = []
         max_objective = -999999
@@ -465,46 +401,32 @@ class TrajectoryNode:
 
         return candidate_user_list, max_ra_list
 
-    def init_ua_ra_max_SINR(self, user_pool=None, isGBS=False):
+    def init_ua_ra_max_SINR(self) -> tuple[list[User], list[float]]:
         valid_user_list = self.get_valid_user()
-        max_user = None
+        max_user = User()
         max_pathloss = 9999
         for user in valid_user_list:
             if user.pathloss < max_pathloss:
                 max_user = user
                 max_pathloss = user.pathloss
-
-        max_user.ra = 1
+                max_user.ra = 1
         return [max_user], [1]
 
-    def init_ua_ra_opt(self, user_pool=None, isGBS=False):
+    def init_ua_ra_opt(self) -> tuple[list[User], list[float]]:
         def ra_objective(sorted_valid_user_list, ra_list):
-            if isGBS:
-                return sum(
-                    [
-                        math.log(1 + ra * user.se_gbs / user.total_data)
-                        if user.time_start <= self.current_time <= user.time_end
-                        else 0
-                        for user, ra in zip(sorted_valid_user_list, ra_list)
-                    ]
-                )
-            else:
-                return sum(
-                    [
+            return sum(
+                [
+                    (
                         math.log(1 + ra * user.se / user.total_data)
                         if user.time_start <= self.current_time <= user.time_end
                         else 0
-                        for user, ra in zip(sorted_valid_user_list, ra_list)
-                    ]
-                )
+                    )
+                    for user, ra in zip(sorted_valid_user_list, ra_list)
+                ]
+            )
 
         def max_waterfilling(v, user):
-            if isGBS:
-                return max(
-                    user.datarate / user.se_gbs, v - user.total_data / user.se_gbs
-                )
-            else:
-                return max(user.datarate / user.se, v - user.total_data / user.se)
+            return max(user.datarate / user.se, v - user.total_data / user.se)
 
         def sum_bandwidth(v, user_list):
             return sum([max_waterfilling(v, user) for user in user_list]) - BANDWIDTH
@@ -513,7 +435,7 @@ class TrajectoryNode:
         max_ua_list = []
         max_objective = -1e6
 
-        valid_user_list = user_pool if isGBS else self.get_valid_user()
+        valid_user_list = self.get_valid_user()
         for i in range(2 ** len(valid_user_list)):
             candidate_user_list = []
             for j, user in enumerate(valid_user_list):
@@ -521,14 +443,7 @@ class TrajectoryNode:
                     candidate_user_list.append(user)
 
             if (
-                sum(
-                    [
-                        user.datarate / user.se_gbs
-                        if isGBS
-                        else user.datarate / user.se
-                        for user in candidate_user_list
-                    ]
-                )
+                sum([user.datarate / user.se for user in candidate_user_list])
                 > BANDWIDTH
             ):
                 continue
@@ -561,34 +476,21 @@ class TrajectoryNode:
 
         return max_ua_list, max_ra_list
 
-    def init_ua_ra_local(self, user_pool=None, isGBS=False):
+    def init_ua_ra_local(self) -> tuple[list[User], list[float]]:
         def ra_objective(user_list, ra_list):
-            if isGBS:
-                return sum(
-                    [
-                        math.log(1 + ra * user.se_gbs / user.total_data)
-                        if user.time_start <= self.current_time <= user.time_end
-                        else 0
-                        for user, ra in zip(user_list, ra_list)
-                    ]
-                )
-            else:
-                return sum(
-                    [
+            return sum(
+                [
+                    (
                         math.log(1 + ra * user.se / user.total_data)
                         if user.time_start <= self.current_time <= user.time_end
                         else 0
-                        for user, ra in zip(user_list, ra_list)
-                    ]
-                )
+                    )
+                    for user, ra in zip(user_list, ra_list)
+                ]
+            )
 
         def max_waterfilling(v, user):
-            if isGBS:
-                return max(
-                    user.datarate / user.se_gbs, v - user.total_data / user.se_gbs
-                )
-            else:
-                return max(user.datarate / user.se, v - user.total_data / user.se)
+            return max(user.datarate / user.se, v - user.total_data / user.se)
 
         def sum_bandwidth(v, user_list):
             return sum([max_waterfilling(v, user) for user in user_list]) - BANDWIDTH
@@ -619,17 +521,7 @@ class TrajectoryNode:
             for idx, user in enumerate(candidate_user_list):
                 tmp_user_list = associated_user_list + [user]
 
-                if (
-                    sum(
-                        [
-                            user.datarate / user.se_gbs
-                            if isGBS
-                            else user.datarate / user.se
-                            for user in tmp_user_list
-                        ]
-                    )
-                    > BANDWIDTH
-                ):
+                if sum([user.datarate / user.se for user in tmp_user_list]) > BANDWIDTH:
                     continue
 
                 tmp_ra_list = ra_list(tmp_user_list)
@@ -641,14 +533,14 @@ class TrajectoryNode:
                     max_ra_list = tmp_ra_list
                     max_idx = idx
 
-            if max_idx != None:
+            if max_idx is not None:
                 no_change = False
                 del candidate_user_list[max_idx]
 
             return max_user_list, max_ra_list, candidate_user_list, no_change
 
         associated_user_list = []
-        candidate_user_list = user_pool if isGBS else self.get_valid_user()
+        candidate_user_list = self.get_valid_user()
         while True:
             (
                 associated_user_list,
@@ -944,7 +836,6 @@ class TrajectoryTree:
         tree_depth,
         num_node_iter,
         max_timeslot,
-        gbs=None,
     ):
         self.root = root
         # Constants
@@ -957,7 +848,6 @@ class TrajectoryTree:
         self.tree_depth = tree_depth
         self.num_node_iter = num_node_iter
         self.max_timeslot = max_timeslot
-        self.gbs = gbs
 
     # Depth First Search
     def DFS(self, current):
@@ -1036,7 +926,6 @@ class TrajectoryTree:
                                             leaf_position,
                                             self.num_node_iter,
                                             parent=node,
-                                            gbs=self.gbs,
                                         )
                                         leafs.append(leaf)
                                         appended_table[tuple(leaf_position)] = False
@@ -1219,86 +1108,6 @@ def random_path(
 
     return path
 
-    """
-if __name__ =="__main__":
-    # Constant for UAV
-    VEHICLE_VELOCITY = 4. # m/s
-    TIME_STEP = 1 # s
-    MAX_TIMESLOT = 10 # unit of (TIME_STEP) s
-    ## Constant for map
-    MAP_WIDTH = 10 # meter, Both X and Y axis width
-    MIN_ALTITUDE = 30 # meter
-    MAX_ALTITUDE = 30 # meter
-    GRID_SIZE = 1 # meter
-    # Constant for user
-    NUM_UE = 3
-    NUM_NODE_ITER = 0
-#    TIME_WINDOW_SIZE = [8, 8]
-    TIME_WINDOW_SIZE = [4, 4]
-#    TIME_WINDOW_SIZE = [2, 2]
-#    TIME_WINDOW_SIZE = [1, 1]
-    TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
-    DATARATE_WINDOW = [10, 10] # Requiring datarate Mb/s
-    INITIAL_DATA = 10 # Mb
-    TREE_DEPTH = 4
-    MAX_DATA = 99999999
-    POWER_ORIG = 158
-
-    pf_proposed = 0
-    pf_circular = 0
-    pf_fixed = 0
-    pf_random = 0
-    num_exp = 1
-    avg_time = 0
-
-    user_list = []
-    for i in range(NUM_UE):
-        tw_size = random.randint(TIME_WINDOW_SIZE[0], TIME_WINDOW_SIZE[1])
-        time_period = random.randint(TIME_PERIOD_SIZE[0], TIME_PERIOD_SIZE[1])
-        datarate = random.randint(DATARATE_WINDOW[0], DATARATE_WINDOW[1])
-        user = User(i, # id
-                [random.randint(0, MAP_WIDTH), random.randint(0, MAP_WIDTH)], # position
-                0, tw_size, time_period, # time window
-                datarate, INITIAL_DATA, MAX_DATA) # data
-        if i == 0:
-            user.position = [0, 0]
-        elif i == 1:
-            user.position = [MAP_WIDTH, 0]
-        else:
-            user.position = [0, MAP_WIDTH]
-            user.time_start = 6
-            user.time_end = 10
-            user.time_period = 4
-        user_list.append(user)
-
-    import copy
-#    gbs = GroundBaseStation()
-    for j in range(num_exp):
-        position = [MAP_WIDTH//2,
-                    MAP_WIDTH//2,
-#                     random.randint(MIN_ALTITUDE, MAX_ALTITUDE)//10*10]
-                    30]
-        # Initial grid position of UAV
-        root = TrajectoryNode(position, NUM_NODE_ITER)
-        # Make user list
-        root.user_list = copy.deepcopy(user_list)
-
-        tree = TrajectoryTree(root, VEHICLE_VELOCITY,\
-                                TIME_STEP, GRID_SIZE,\
-                                MAP_WIDTH, MIN_ALTITUDE, MAX_ALTITUDE,\
-                                TREE_DEPTH, NUM_NODE_ITER, MAX_TIMESLOT, gbs=None)
-        start = time.time()
-        PATH1 = tree.pathfinder()
-        avg_time += time.time()-start
-        user_list = PATH1[-1].user_list
-        tmp_pf_proposed = sum([math.log(user.total_data-INITIAL_DATA) for user in user_list if user.total_data != INITIAL_DATA])
-        tmp_sum_proposed = sum([user.total_data-INITIAL_DATA for user in user_list if user.total_data != INITIAL_DATA])
-        pf_proposed += tmp_pf_proposed
-
-    print(PATH1)
-    print(f'DFS trajectory pf: {pf_proposed/num_exp}')
-"""
-
 
 if __name__ == "__main__":
     # Constant for UAV
@@ -1327,7 +1136,7 @@ if __name__ == "__main__":
     pf_circular = 0
     pf_fixed = 0
     pf_random = 0
-    num_exp = 100
+    num_exp = 1
     avg_time = 0
 
     pl_proposed = 0
@@ -1335,9 +1144,6 @@ if __name__ == "__main__":
     pl_fixed = 0
     service_count_fixed = 0
 
-    import copy
-
-    #    gbs = GroundBaseStation()
     for j in range(num_exp):
         position = [
             random.randint(0, MAP_WIDTH) // 10 * 10,
@@ -1364,6 +1170,7 @@ if __name__ == "__main__":
                 datarate,
                 INITIAL_DATA,
                 MAX_DATA,
+                [5, 5],
             )  # data
             user_list.append(user)
         root.user_list = copy.deepcopy(user_list)
@@ -1379,7 +1186,6 @@ if __name__ == "__main__":
             TREE_DEPTH,
             NUM_NODE_ITER,
             MAX_TIMESLOT,
-            gbs=None,
         )
         start = time.time()
         PATH1 = tree.pathfinder()
@@ -1400,15 +1206,6 @@ if __name__ == "__main__":
             ]
         )
         pf_proposed += tmp_pf_proposed
-
-        # sum_reward = 0
-        # for node in PATH1[1:]:
-        #     sum_reward += node.reward
-        #     for user in node.serviced_ua_list:
-        #         pl_proposed += user.pathloss
-        #     service_count_proposed += len(node.serviced_ua_list)
-        # print(sum_reward, pf_proposed)
-        # exit()
 
         for user in user_list:
             user.total_data = INITIAL_DATA
@@ -1469,11 +1266,6 @@ if __name__ == "__main__":
             ]
         )
         pf_fixed += tmp_pf_fixed
-
-        for node in PATH4:
-            for user in node.serviced_ua_list:
-                pl_fixed += user.pathloss
-            service_count_fixed += len(node.serviced_ua_list)
 
         print(
             f"Iteration: {j}, Proposed: {tmp_pf_proposed: .2f}, Circular: {tmp_pf_circular: .2f}, random: {tmp_pf_random: .2f}, fixed: {tmp_pf_fixed: .2f}"
