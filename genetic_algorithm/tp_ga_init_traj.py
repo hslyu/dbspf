@@ -25,19 +25,22 @@ def isAvailable(position, map_width, min_altitude, max_altitude):
 
 
 def fitness_func_factory(
-    node: db.TrajectoryNode,
+    init_path: list[db.TrajectoryNode],
     map_width: float,
     min_altitude: float,
     max_altitude: float,
     grid_size: float,
 ):
+    """
+    path: stores initial ua, ra, pc for every node.
+    """
+
     def fitness_func(solution, solution_idx):
-        nonlocal node
-        gene_node = db.TrajectoryNode(node.position, num_iter=0, parent=node)
-        gene_node.current_time = 0
-        gene_node.reward = node.reward
-        fitness = node.reward
-        for action in solution:
+        nonlocal init_path
+
+        gene_node = init_path[0]
+        fitness = gene_node.reward
+        for i, action in enumerate(solution):
             position = gene_node.position
             next_position = position.copy()
             if action == 0:
@@ -60,11 +63,11 @@ def fitness_func_factory(
                 else position
             )
 
-            gene_node = db.TrajectoryNode(position, num_iter=0, parent=gene_node)
-            # user_list = gene_node.user_list
-            # fitness = sum(
-            #     math.log(user.total_data - 10) for user in user_list if user.total_data > 10
-            # )
+            ra_list = [user.ra for user in init_path[i].user_list]
+            psd_list = [user.psd for user in init_path[i].user_list]
+            gene_node = db.TrajectoryNode(
+                position, parent=gene_node, ra_list=ra_list, psd_list=psd_list
+            )
 
             fitness += gene_node.reward
 
@@ -74,57 +77,21 @@ def fitness_func_factory(
 
 
 def genetic_tp(
-    root,
-    vehicle_velocity,
-    time_step,
+    init_path,
     grid_size,
     map_width,
     min_altitude,
     max_altitude,
-    max_timeslot,
     verbose=False,
 ):
-    tree = db.TrajectoryTree(
-        root,
-        vehicle_velocity,
-        time_step,
-        grid_size,
-        map_width,
-        min_altitude,
-        max_altitude,
-        tree_depth=3,
-        num_node_iter=0,
-        max_timeslot=max_timeslot,
-    )
-    dfs_path = tree.pathfinder()
-
-    initial_gene = []
-    for i in range(max_timeslot + 1):
-        if dfs_path[i].position == dfs_path[i].position:
-            initial_gene.append(0)
-        elif dfs_path[i].position[0] < dfs_path[i].position[0]:
-            initial_gene.append(1)
-        elif dfs_path[i].position[0] > dfs_path[i].position[0]:
-            initial_gene.append(2)
-        elif dfs_path[i].position[1] < dfs_path[i].position[1]:
-            initial_gene.append(3)
-        elif dfs_path[i].position[1] > dfs_path[i].position[1]:
-            initial_gene.append(4)
-        elif dfs_path[i].position[2] < dfs_path[i].position[2]:
-            initial_gene.append(5)
-        elif dfs_path[i].position[2] > dfs_path[i].position[2]:
-            initial_gene.append(6)
-
-    num_genes = 21
-    sol_per_pop = 50
-    initial_population = np.random.randint(0, 6, size=(sol_per_pop, num_genes))
-    initial_population[0] = initial_gene
-
     fitness_func = fitness_func_factory(
-        root, map_width, min_altitude, max_altitude, grid_size
+        init_path, map_width, min_altitude, max_altitude, grid_size
     )
+
+    sol_per_pop = 50
     num_generations = 10000
     num_parents_mating = 10
+    num_genes = 20
 
     gene_space = {"low": 0, "high": 6}
 
@@ -141,9 +108,8 @@ def genetic_tp(
         on_generation=callback_func,
         gene_type=int,
         gene_space=gene_space,
-        initial_population=initial_population,
         stop_criteria="saturate_50",
-        mutation_probability=0.1,
+        mutation_probability=0.05,
     )
 
     ga_instance.run()
@@ -154,11 +120,11 @@ def genetic_tp(
 
 def callback_generation(ga_instance):
     Generation = ga_instance.generations_completed
-    if Generation % 50 == 0:
+    if Generation % 100 == 0:
         global last_fitness
         Fitness = ga_instance.best_solution()[1]
         Change = ga_instance.best_solution()[1] - last_fitness
-        # print(f"{Generation = :02d}, {Fitness = :.3f}, {Change = :.5f}")
+        print(f"{Generation = :02d}, {Fitness = :.3f}, {Change = :.5f}")
         last_fitness = ga_instance.best_solution()[1]
     else:
         pass
@@ -166,32 +132,20 @@ def callback_generation(ga_instance):
 
 def get_path(
     root,
-    vehicle_velocity,
-    time_step,
     grid_size,
     map_width,
     min_altitude,
     max_altitude,
     max_timeslot,
     verbose=False,
+    num_iter=10,
 ):
-    solution, _, _ = genetic_tp(
-        root,
-        vehicle_velocity,
-        time_step,
-        grid_size,
-        map_width,
-        min_altitude,
-        max_altitude,
-        max_timeslot,
-        verbose,
-    )
-
-    path = [root]
     node = root
-    for action in solution:
-        position = node.position
-        next_position = position.copy()
+    path = [root]
+    init_path = []
+    for _ in range(max_timeslot):
+        next_position = node.position.copy()
+        action = random.randint(0, 6)
         if action == 0:
             pass
         elif action == 1:
@@ -209,13 +163,58 @@ def get_path(
         position = (
             next_position
             if isAvailable(next_position, map_width, min_altitude, max_altitude)
-            else position
+            else node.position.copy()
+        )
+        position = node.position.copy()
+        node = db.TrajectoryNode(position, parent=node)
+        path.append(node)
+
+    prev_fitness = -2
+    fitness = -1
+    for i in range(num_iter):
+        if fitness < prev_fitness:
+            break
+        prev_fitness = fitness
+
+        solution, fitness, _ = genetic_tp(
+            path,
+            grid_size,
+            map_width,
+            min_altitude,
+            max_altitude,
+            verbose,
         )
 
-        next_node = db.TrajectoryNode(position, num_iter=0, parent=node)
-        path.append(next_node)
-        node = next_node
-    return path
+        node = path[0]
+        for j, action in enumerate(solution):
+            position = node.position
+            next_position = position.copy()
+            if action == 0:
+                pass
+            elif action == 1:
+                next_position[0] += grid_size
+            elif action == 2:
+                next_position[0] -= grid_size
+            elif action == 3:
+                next_position[1] += grid_size
+            elif action == 4:
+                next_position[1] -= grid_size
+            elif action == 5:
+                next_position[2] += grid_size
+            elif action == 6:
+                next_position[2] -= grid_size
+            position = (
+                next_position
+                if isAvailable(next_position, map_width, min_altitude, max_altitude)
+                else position
+            )
+
+            node = db.TrajectoryNode(position, num_iter=0, parent=node)
+            path[j + 1] = node
+        if i == 0:
+            init_path = copy.deepcopy(path)
+
+    return path, init_path
 
 
 def main():
@@ -265,12 +264,9 @@ def main():
             user_list.append(user)
 
         node = db.TrajectoryNode(position)
-        node.user_list = user_list
-
-        node_dfs = db.TrajectoryNode(position)
-        node_dfs.user_list = copy.deepcopy(user_list)
+        node.user_list = copy.deepcopy(user_list)
         tree = db.TrajectoryTree(
-            node_dfs,
+            node,
             vehicle_velocity,
             time_step,
             grid_size,
@@ -282,41 +278,42 @@ def main():
             max_timeslot=max_timeslot,
         )
         dfs_path = tree.pathfinder()
-        user_list = dfs_path[-1].user_list
-        pf_dfs = sum(
-            math.log(user.total_data - 10) for user in user_list if user.total_data > 10
-        )
+        dfs_pf_list = [
+            math.log(user.total_data - initial_data)
+            for user in dfs_path[-1].user_list
+            if user.total_data > initial_data
+        ]
+        pf_dfs = sum(dfs_pf_list)
+
+        node = db.TrajectoryNode(position)
+        node.user_list = copy.deepcopy(user_list)
+        node.get_reward()
 
         start = time.time()
-        path = get_path(
+        path, init_path = get_path(
             node,
-            vehicle_velocity,
-            time_step,
             grid_size,
             map_width,
             min_altitude,
             max_altitude,
             max_timeslot,
             True,
+            num_iter=10,
         )
         user_list = path[-1].user_list
         pf = sum(
             math.log(user.total_data - 10) for user in user_list if user.total_data > 10
         )
-        print(f"PF: {pf}, PF_DFS: {pf_dfs}")
+
         avg_pf += pf
         avg_pf_dfs += pf_dfs
-    # print(f"Elapsed time: {time.time() - start:.3f} s")
-    # print("Parameters of the best solution : {solution}".format(solution=solution))
-    # print(
-    #     "Fitness value of the best solution = {solution_fitness}".format(
-    #         solution_fitness=solution_fitness
-    #     )
-    # )
-    # print(
-    #     "Index of the best solution : {solution_idx}".format(solution_idx=solution_idx)
-    # )
-    print(f"Average PF: {avg_pf/num_exp}, Average PF_DFS: {avg_pf_dfs/num_exp}")
+        # for a, b in zip(path, init_path):
+        #     print(f"{a.position = }, {b.position = }")
+        print(f"GA PF: {pf}, DFS PF: {pf_dfs}")
+        # for ga_node, dfs_node in zip(path, dfs_path):
+        #     print(f"{ga_node.position = }, {dfs_node.position = }")
+        # print(f"Elapsed time: {time.time() - start:.3f} s")
+    print(f"Averaged GA PF: {avg_pf / num_exp}, DFS PF: {avg_pf_dfs / num_exp}")
 
 
 if __name__ == "__main__":
