@@ -1,0 +1,1 @@
+python iterative_simulation.py --index_start $1 --index_end $2 --datarate $4 --bandwidth $5 --mode ga_iter --num_user $3 --env_path data_ga_1500 --result_path $HOME/storage/dbspf/bw${bw}/ga_iter-rate-1500

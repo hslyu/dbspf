@@ -1,14 +1,15 @@
 #!/bin/bash
 
-if [ "$#" -ne 4 ]; then
-	echo "Usage: ../run/run_iterative_simulation.sh <index_start> <index_end> <num_user> <bandwidth>"
+if [ "$#" -ne 5 ]; then
+	echo "Usage: ../run/run_iterative_simulation.sh <index_start> <index_end> <num_user> <datarate> <bandwidth>"
 	exit
 fi
 index_start=$1
 index_end=$2
 num_user=$3
-bw=$4
-scheme=genetic
+datarate=$4
+bw=$5
+scheme=ga_iter
 
 for rate in $(seq 0 1 10)
 do

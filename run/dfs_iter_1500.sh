@@ -1,0 +1,1 @@
+python iterative_simulation.py --index_start $1 --index_end $2 --num_user $3 --datarate $4 --bandwidth $5 --mode DFS --tree_depth 5 --env_path data_ga_1500 --result_path $HOME/storage/dbspf/ga/dfs_iter-rate-1500/datarate_${4}
