@@ -8,7 +8,9 @@ import argparse
 import json
 import math
 import os
+import random
 import sys
+import time
 
 import drone_basestation as dbs
 from drone_basestation import TrajectoryNode, User
@@ -16,8 +18,10 @@ from utils import create_dir, open_json
 
 sys.path.append("./tp_dqn")
 sys.path.append("./genetic_algorithm")
-from genetic_algorithm import tp_ga_optimizer  # noqa
+from genetic_algorithm import tp_ga_init_traj, tp_ga_optimizer  # noqa
 from tp_dqn import run as tp_dqn_run  # noqa
+
+random.seed(0)
 
 
 def get_parser():
@@ -82,6 +86,12 @@ def load_root(path, num_user, env_index):
         for user_dict in user_dict_list[0:num_user]:
             user = User(*user_dict.values())
             user_list.append(user)
+        for idx, user in enumerate(user_list):
+            if idx < 10:
+                user.velocity = [
+                    random.randint(0, 20) * random.choice((-1, 1)),
+                    random.randint(0, 20) * random.choice((-1, 1)),
+                ]
         root.user_list = user_list
 
     return root, user_list
@@ -110,7 +120,6 @@ def save_result(
         node_dict = node.__dict__.copy()
         # Delete recursive unserializable obejct "TrajectoryNode"
         del node_dict["leafs"]
-        del node_dict["serviced_ua_list"]
         if node.parent is not None:
             node_dict["parent"] = node.parent.position
         node_dict["user_list"] = []
@@ -151,8 +160,10 @@ if __name__ == "__main__":
 
     avg_obj = 0
     avg_reward = 0
+    total_time = 0
     # Load root node and start trajectory plannnig
     for env_index in range(main_args.index_start, main_args.index_end):
+        start = time.time()
         root, user_list = load_root(main_args.env_path, main_args.num_user, env_index)
         for user in user_list:
             user.datarate = main_args.datarate
@@ -203,9 +214,21 @@ if __name__ == "__main__":
             )
         elif main_args.mode == "dqn":
             dbs_trajectory = tp_dqn_run.get_path(root, main_args.bandwidth)
+        elif main_args.mode == "ga_iter":
+            # initialized ga tp
+            dbs_trajectory, init_trajectory = tp_ga_init_traj.get_path(
+                root,
+                env_args.grid_size,
+                env_args.map_width,
+                env_args.min_altitude,
+                env_args.max_altitude,
+                env_args.max_timeslot,
+                num_iter=5,
+            )
+        elapsed_time = time.time() - start
+        total_time += elapsed_time
 
         total_reward = 0
-        total_time = 0
         user_list = dbs_trajectory[-1].user_list
         obj = sum(
             [
@@ -217,7 +240,6 @@ if __name__ == "__main__":
         avg_obj += obj
         for node in dbs_trajectory:
             total_reward += node.reward
-            total_time += node.elapsed_time
         save_result(
             f"env_{env_index:04d}-depth_{main_args.tree_depth}-ue_{main_args.num_user}.json",
             main_args.result_path,
@@ -225,10 +247,22 @@ if __name__ == "__main__":
             main_args,
             env_index,
             total_reward,
-            total_time,
+            elapsed_time,
             dbs_trajectory,
         )
-        if main_args.mode == "genetic":
+        if main_args.mode == "ga_iter":
+            save_result(
+                f"env_{env_index:04d}-depth_{main_args.tree_depth}-ue_{main_args.num_user}-init.json",
+                main_args.result_path,
+                env_args_dict,
+                main_args,
+                env_index,
+                total_reward,
+                elapsed_time,
+                init_trajectory,
+            )
+
+        if main_args.mode == "genetic" or main_args.mode == "ga_iter":
             print_period = 1
         else:
             print_period = 10
@@ -240,5 +274,5 @@ if __name__ == "__main__":
         avg_reward += total_reward
     num_exp = main_args.index_end - main_args.index_start
     print(
-        f"Depth: {main_args.tree_depth}, #users: {main_args.num_user}, datarate: {main_args.datarate}, avg_reward: {avg_reward/num_exp}, avg_obj: {avg_obj/num_exp}"
+        f"Depth: {main_args.tree_depth}, #users: {main_args.num_user}, datarate: {main_args.datarate}, avg_reward: {avg_reward/num_exp}, avg_obj: {avg_obj/num_exp}, avg_time: {total_time/num_exp}"
     )

@@ -7,6 +7,7 @@
 import argparse
 import copy
 import random
+import time
 
 from drone_basestation import TrajectoryNode, User
 from genetic_algorithm import rrm_ga_optimizer as ga_rrm
@@ -21,7 +22,7 @@ MIN_ALTITUDE = 50  # meter
 MAX_ALTITUDE = 200  # meter
 GRID_SIZE = 45  # meter
 # Constant for user
-NUM_UE = 10
+NUM_UE = 20
 TIME_WINDOW_SIZE = [4, 8]
 TIME_PERIOD_SIZE = [MAX_TIMESLOT, MAX_TIMESLOT]
 DATARATE_WINDOW = [5, 5]  # Requiring datarate Mb/s
@@ -57,9 +58,10 @@ step = 1
 reward_ga = 0
 reward = 0
 reward_max_SINR = 0
+avg_time = 0
 
 if args.index_start is None:
-    num_env = 100
+    num_env = 10
     iter_range = range(num_env)
 else:
     num_env = args.index_end - args.index_start
@@ -100,9 +102,15 @@ for env_idx in iter_range:
     # eps_reward_ga = ga_rrm.get_rrm_reward(root)
     # reward_ga += eps_reward_ga
 
-    # root.user_list = copy.deepcopy(user_list)
-    # eps_reward = root.get_reward()
-    # reward += eps_reward
+    start = time.time()
+    root.user_list = copy.deepcopy(user_list)
+    # eps_reward_ga = ga_rrm.get_rrm_reward(root)
+    # reward_ga += eps_reward_ga
+    eps_reward = root.get_reward()
+    reward += eps_reward
+    eps_time = time.time() - start
+    avg_time += eps_time
+    print(f"Elapsed time: {eps_time:.5f}")
 
     # root.user_list = copy.deepcopy(user_list)
     # eps_reward_max_SINR = root.get_reward(init_ua_ra_mode="max_SINR")
@@ -112,7 +120,7 @@ for env_idx in iter_range:
     #     f"env_idx: {env_idx}, reward_ga: {eps_reward_ga:.5f}, reward: {eps_reward:.5f}, reward_max_SINR: {eps_reward_max_SINR:.5f}"
     # )
 
-
+print(f"Average time: {avg_time / num_env}")
 # print(f"Average reward_ga: {reward_ga / num_env}")
 # print(f"Average reward: {reward / num_env}")
 # print(f"Average reward: {reward_max_SINR / num_env}")
